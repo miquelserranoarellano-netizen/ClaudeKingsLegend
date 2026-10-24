@@ -1,0 +1,11 @@
+# Caddy obtiene y renueva solo el certificado HTTPS de tu dominio (Let's Encrypt).
+# Requisito: los registros DNS A de DOMAIN y www.DOMAIN apuntan a la IP del servidor.
+
+{$DOMAIN} {
+	encode zstd gzip
+	reverse_proxy app:3000
+}
+
+www.{$DOMAIN} {
+	redir https://{$DOMAIN}{uri} permanent
+}

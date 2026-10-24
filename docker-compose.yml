@@ -1,0 +1,62 @@
+# Despliegue completo en un servidor (por ejemplo, un VPS de Hostinger con Docker):
+#   cp .env.example .env    (y rellenarlo)
+#   docker compose up -d --build
+#
+# Servicios:
+#   db     PostgreSQL 17. Sin puertos publicados: solo lo ve la aplicación por la red interna.
+#   app    Kings Legend (Next.js). Aplica las migraciones al arrancar.
+#   caddy  Proxy inverso con HTTPS automático (Let's Encrypt) para tu dominio.
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: kings_legend
+      POSTGRES_USER: kings_legend
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD en .env}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kings_legend -d kings_legend"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:?Define NEXT_PUBLIC_SITE_URL en .env}
+        NEXT_PUBLIC_TIME_ZONE: ${NEXT_PUBLIC_TIME_ZONE:-Europe/Madrid}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://kings_legend:${POSTGRES_PASSWORD}@db:5432/kings_legend
+    depends_on:
+      db:
+        condition: service_healthy
+    expose:
+      - "3000"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      DOMAIN: ${DOMAIN:?Define DOMAIN en .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - app
+
+volumes:
+  db-data:
+  caddy-data:
+  caddy-config:

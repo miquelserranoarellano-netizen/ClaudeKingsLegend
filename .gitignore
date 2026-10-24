@@ -1,0 +1,25 @@
+# Dependencias y compilación
+node_modules/
+.next/
+out/
+build/
+next-env.d.ts
+*.tsbuildinfo
+
+# Base de datos local (PGlite) y subidas de desarrollo
+.data/
+
+# Variables de entorno: nunca se suben. La plantilla sí.
+.env
+.env.*
+!.env.example
+
+# Pruebas
+test-results/
+playwright-report/
+coverage/
+
+# Sistema
+.DS_Store
+Thumbs.db
+*.log
