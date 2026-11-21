@@ -3,7 +3,21 @@
 Precios orientativos a octubre de 2026, sin IVA salvo que se indique. Cambian a menudo y las ofertas exigen
 permanencia: compruébalos siempre antes de pagar. El código no depende de ningún servicio de pago.
 
-## Imprescindibles
+## Opción principal: Cloudflare Workers + Supabase (noviembre de 2026)
+
+| Concepto | Plan | Coste aproximado |
+| --- | --- | --- |
+| Cloudflare Workers | **Workers Paid** (imprescindible: el gratuito corta a 10 ms de CPU por petición y comprobar una contraseña gasta ~80 ms) | 5 $/mes; incluye 10 millones de peticiones y 30 millones de ms de CPU al mes. |
+| Hyperdrive | Incluido en Workers | 0 $ (el plan gratuito de Workers lo limita a 100.000 consultas al día; el de pago, sin límite). |
+| Supabase | Free: 500 MB de base, 5 GB de salida al mes, **se pausa tras 7 días sin actividad** | 0 $. Pro: 25 $/mes (8 GB, sin pausas). |
+| Correo | Resend Free: 100 correos al día, 3.000 al mes | 0 $. Pro: 20 $/mes. |
+| Dominio | `.es` o `.com` (opcional al principio: sirve el de `workers.dev`) | ~10–20 €/año. |
+
+**Mínimo: 5 $/mes** (más el dominio si lo quieres). Con mucho crecimiento: Supabase Pro (+25 $/mes).
+
+## Alternativa: VPS (Hostinger)
+
+### Imprescindibles
 
 | Concepto | Opción recomendada | Coste aproximado |
 | --- | --- | --- |
@@ -15,7 +29,7 @@ permanencia: compruébalos siempre antes de pagar. El código no depende de ning
 
 Total mínimo realista: **~100–130 € el primer año** (VPS con permanencia + dominio), más IVA.
 
-## Opcionales
+### Opcionales
 
 | Concepto | Para qué | Coste aproximado |
 | --- | --- | --- |

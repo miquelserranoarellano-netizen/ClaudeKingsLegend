@@ -58,13 +58,13 @@ export default async function TournamentPage({ params, searchParams }: { params:
   const competitionTab = t.format === "league" ? "Clasificación" : "Cuadro";
   const tab: Tab = (TABS as readonly string[]).includes(search.vista ?? "") ? (search.vista as Tab) : "resumen";
 
-  const [participants, rounds, champion, announcements] = await Promise.all([
+  const [participants, rounds, champion, announcements, standings] = await Promise.all([
     getParticipants(t.id),
     started ? getCompetition(t.id, t.format) : Promise.resolve([]),
     getChampion(t),
     listPublishedAnnouncements({ tournamentId: t.id, pageSize: 5 }),
+    started && t.format === "league" ? getLeagueStandings(t.id) : Promise.resolve([]),
   ]);
-  const standings = started && t.format === "league" ? await getLeagueStandings(t.id) : [];
   const tabHref = (value: Tab) => {
     const q = new URLSearchParams();
     if (value !== "resumen") q.set("vista", value);

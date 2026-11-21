@@ -207,7 +207,8 @@ export interface ParticipantRef {
   status: "active" | "disqualified";
 }
 
-export async function getParticipants(tournamentId: string): Promise<ParticipantRef[]> {
+/** Participantes de un torneo. Se memoriza durante la petición (varias partes de la página los piden). */
+export const getParticipants = cache(async (tournamentId: string): Promise<ParticipantRef[]> => {
   const db = await getDb();
   const rows = await db
     .select({
@@ -239,7 +240,7 @@ export async function getParticipants(tournamentId: string): Promise<Participant
     seed: r.seed,
     status: r.status,
   }));
-}
+});
 
 export interface TournamentDetail {
   tournament: TournamentRow;
@@ -340,7 +341,8 @@ export interface RoundView {
   matches: MatchView[];
 }
 
-export async function getCompetition(tournamentId: string, format: TournamentRow["format"]): Promise<RoundView[]> {
+/** Rondas y partidos de un torneo, memorizados durante la petición. */
+export const getCompetition = cache(async (tournamentId: string, format: TournamentRow["format"]): Promise<RoundView[]> => {
   const db = await getDb();
   const [participants, rounds, rows] = await Promise.all([
     getParticipants(tournamentId),
@@ -384,20 +386,24 @@ export async function getCompetition(tournamentId: string, format: TournamentRow
           version: m.version,
         })),
     }));
-}
+});
 
 export interface StandingView extends StandingRow {
   participant: ParticipantRef;
 }
 
-export async function getLeagueStandings(tournamentId: string): Promise<StandingView[]> {
+/** Clasificación de una liga (calculada, no guardada), memorizada durante la petición. */
+export const getLeagueStandings = cache(async (tournamentId: string): Promise<StandingView[]> => {
   const db = await getDb();
-  const [rules] = await db.select().from(tournamentRules).where(eq(tournamentRules.tournamentId, tournamentId));
-  const participants = await getParticipants(tournamentId);
-  const confirmed = await db
-    .select()
-    .from(matches)
-    .where(and(eq(matches.tournamentId, tournamentId), eq(matches.status, "confirmed"), eq(matches.isBye, false)));
+  // Las tres lecturas son independientes: a la vez, no una detrás de otra.
+  const [[rules], participants, confirmed] = await Promise.all([
+    db.select().from(tournamentRules).where(eq(tournamentRules.tournamentId, tournamentId)),
+    getParticipants(tournamentId),
+    db
+      .select()
+      .from(matches)
+      .where(and(eq(matches.tournamentId, tournamentId), eq(matches.status, "confirmed"), eq(matches.isBye, false))),
+  ]);
   const table = computeStandings(
     participants.map((p, index) => ({ id: p.id, seed: p.seed ?? index + 1 })),
     confirmed.map((m) => ({
@@ -417,7 +423,7 @@ export async function getLeagueStandings(tournamentId: string): Promise<Standing
   );
   const byId = new Map(participants.map((p) => [p.id, p]));
   return table.map((row) => ({ ...row, participant: byId.get(row.participantId)! }));
-}
+});
 
 /** Campeón de un torneo terminado (o `null`). */
 export async function getChampion(t: Pick<TournamentRow, "id" | "format" | "status">): Promise<ParticipantRef | null> {

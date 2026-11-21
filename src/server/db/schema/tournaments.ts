@@ -77,11 +77,13 @@ export const tournaments = pgTable(
   (t) => [
     index("tournaments_status_starts_idx").on(t.status, t.startsAt),
     index("tournaments_organizer_idx").on(t.organizerId),
+    // Al borrar una imagen, Postgres busca quién la usa: sin índice recorrería toda la tabla.
+    index("tournaments_banner_idx").on(t.bannerMediaId).where(sql`${t.bannerMediaId} is not null`),
     check("tournaments_participants_ck", sql`${t.minParticipants} >= 2 and ${t.maxParticipants} >= ${t.minParticipants} and ${t.maxParticipants} <= 256`),
     check("tournaments_dates_ck", sql`${t.registrationOpensAt} < ${t.registrationClosesAt} and ${t.registrationClosesAt} <= ${t.startsAt}`),
     check("tournaments_ends_ck", sql`${t.endsAt} is null or ${t.endsAt} >= ${t.startsAt}`),
   ],
-);
+).enableRLS();
 
 /** Configuración estructurada de la competición (1:1 con `tournaments`). */
 export const tournamentRules = pgTable(
@@ -122,7 +124,7 @@ export const tournamentRules = pgTable(
     check("rules_legs_ck", sql`${t.leagueLegs} in (1, 2)`),
     check("rules_points_ck", sql`${t.pointsWin} > ${t.pointsLoss} and ${t.pointsLoss} >= ${t.pointsForfeitLoss}`),
   ],
-);
+).enableRLS();
 
 export const tournamentRegistrations = pgTable(
   "tournament_registrations",
@@ -151,9 +153,12 @@ export const tournamentRegistrations = pgTable(
     uniqueIndex("registrations_team_uq").on(t.tournamentId, t.teamId),
     uniqueIndex("registrations_user_uq").on(t.tournamentId, t.userId),
     index("registrations_tournament_status_idx").on(t.tournamentId, t.status),
+    // Inscripciones de un equipo o de un jugador (panel, perfil, comprobaciones al inscribirse).
+    index("registrations_team_idx").on(t.teamId).where(sql`${t.teamId} is not null`),
+    index("registrations_user_idx").on(t.userId).where(sql`${t.userId} is not null`),
     check("registrations_one_entrant_ck", sql`(${t.teamId} is null) <> (${t.userId} is null)`),
   ],
-);
+).enableRLS();
 
 /**
  * Plantilla inscrita: qué jugadores juegan el torneo con cada inscripción. La unicidad
@@ -176,8 +181,10 @@ export const registrationMembers = pgTable(
   (t) => [
     primaryKey({ columns: [t.registrationId, t.userId] }),
     uniqueIndex("registration_members_tournament_user_uq").on(t.tournamentId, t.userId),
+    // Torneos en los que juega un jugador (su panel y su perfil público).
+    index("registration_members_user_idx").on(t.userId),
   ],
-);
+).enableRLS();
 
 /** Participante confirmado (inscripción aprobada). La semilla se asigna al generar el cuadro. */
 export const tournamentParticipants = pgTable(
@@ -204,4 +211,4 @@ export const tournamentParticipants = pgTable(
     uniqueIndex("participants_seed_uq").on(t.tournamentId, t.seed).where(sql`${t.seed} is not null`),
     check("participants_one_entrant_ck", sql`(${t.teamId} is null) <> (${t.userId} is null)`),
   ],
-);
+).enableRLS();

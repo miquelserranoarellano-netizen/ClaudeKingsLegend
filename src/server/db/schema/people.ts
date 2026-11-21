@@ -51,7 +51,7 @@ export const media = pgTable(
     index("media_owner_idx").on(t.ownerId),
     check("media_size_ck", sql`${t.byteSize} > 0 and ${t.byteSize} <= 3145728`),
   ],
-);
+).enableRLS();
 
 /** Perfil público del jugador (1:1 con `users`). */
 export const profiles = pgTable(
@@ -81,12 +81,14 @@ export const profiles = pgTable(
       .on(sql`lower(${t.riotGameName})`, sql`lower(${t.riotTagLine})`)
       .where(sql`${t.riotGameName} is not null`),
     check("profiles_handle_ck", sql`${t.handle} ~ '^[a-z0-9][a-z0-9-]{1,30}[a-z0-9]$'`),
+    // Al borrar una imagen, Postgres busca quién la usa: sin índice recorrería todos los perfiles.
+    index("profiles_avatar_idx").on(t.avatarMediaId).where(sql`${t.avatarMediaId} is not null`),
     check(
       "profiles_riot_id_ck",
       sql`(${t.riotGameName} is null) = (${t.riotTagLine} is null)`,
     ),
   ],
-);
+).enableRLS();
 
 export const teams = pgTable(
   "teams",
@@ -113,9 +115,10 @@ export const teams = pgTable(
     uniqueIndex("teams_name_active_uq").on(sql`lower(${t.name})`).where(sql`${t.status} = 'active'`),
     uniqueIndex("teams_tag_active_uq").on(sql`lower(${t.tag})`).where(sql`${t.status} = 'active'`),
     index("teams_captain_idx").on(t.captainId),
+    index("teams_logo_idx").on(t.logoMediaId).where(sql`${t.logoMediaId} is not null`),
     check("teams_tag_ck", sql`${t.tag} ~ '^[A-Za-z0-9]{2,5}$'`),
   ],
-);
+).enableRLS();
 
 export const teamMembers = pgTable(
   "team_members",
@@ -134,7 +137,7 @@ export const teamMembers = pgTable(
     uniqueIndex("team_members_team_user_uq").on(t.teamId, t.userId),
     index("team_members_user_idx").on(t.userId),
   ],
-);
+).enableRLS();
 
 export const teamInvitations = pgTable(
   "team_invitations",
@@ -160,4 +163,4 @@ export const teamInvitations = pgTable(
       .where(sql`${t.status} = 'pending'`),
     index("team_invitations_invitee_idx").on(t.inviteeId, t.status),
   ],
-);
+).enableRLS();

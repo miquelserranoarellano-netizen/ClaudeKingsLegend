@@ -6,14 +6,15 @@
 | --- | --- | --- |
 | Aplicación | **Next.js 16** (App Router, Server Components, acciones de servidor) + React 19 + TypeScript estricto | Frontend y backend en un solo despliegue; todo el acceso a datos ocurre en el servidor. |
 | Estilos | **Tailwind CSS 4** + componentes propios accesibles (`src/components/ui`) | Al estilo de shadcn/ui pero sin dependencias extra: controles nativos (`<dialog>`, `<select>`, radios) que ya son accesibles con teclado. |
-| Base de datos | **PostgreSQL** con **Drizzle ORM** (un solo ORM) | Esquema tipado, migraciones SQL reproducibles (`drizzle/`). |
+| Base de datos | **PostgreSQL** (Supabase en producción) con **Drizzle ORM** (un solo ORM) | Esquema tipado, migraciones SQL reproducibles (`drizzle/`). |
 | Base local | **PGlite** (Postgres compilado a WASM) | En desarrollo y en las pruebas no hay que instalar nada: el mismo SQL y las mismas migraciones que en producción. |
 | Autenticación | **Better Auth** (sucesor mantenido de Auth.js) | Hash scrypt, sesiones en base de datos, cookies HttpOnly, CSRF, verificación de correo y recuperación de contraseña. |
 | Validación | **Zod 4** | Los mismos esquemas validan en el navegador y en el servidor. |
 | Formularios | `useActionState` + acciones de servidor | Funcionan sin JavaScript extra; React Hook Form no aportaba lo suficiente aquí. |
-| Correo | **nodemailer** (SMTP), solo si se configura | Sin proveedor no se finge nada: la interfaz lo dice. |
+| Correo | **Resend** (API HTTP, para Cloudflare) o **nodemailer** (SMTP, para Node), solo si se configura | Sin proveedor no se finge nada: la interfaz lo dice. |
 | Pruebas | **Vitest** (dominio + integración contra Postgres en memoria) y **Playwright** (extremo a extremo) | |
-| Despliegue | Docker Compose: app + PostgreSQL 17 + Caddy (HTTPS automático) | Portable a cualquier VPS; ver `docs/DESPLIEGUE.md`. |
+| Despliegue | **Cloudflare Workers** con el adaptador **OpenNext** + **Supabase** (con Hyperdrive) | Sin servidores que mantener; ver `docs/DESPLIEGUE-CLOUDFLARE.md` y la sección 8. |
+| (alternativa) | Docker Compose: app + PostgreSQL 17 + Caddy (HTTPS automático) | Portable a cualquier VPS; ver `docs/DESPLIEGUE.md`. |
 
 ## 2. Organización del código
 
@@ -56,6 +57,12 @@ Europe/Madrid); identificadores UUID (los de Better Auth, texto).
 | `match_games`, `match_results`, `result_evidence`, `disputes` | Partidas, resultados comunicados/validados/sustituidos (nunca se borran), evidencias y disputas (una abierta por partido). |
 | `notifications`, `announcements`, `audit_logs`, `platform_settings`, `content_pages`, `rate_limits` | Avisos, anuncios, auditoría (solo inserción), ajustes, páginas legales y límites de peticiones. |
 
+**Seguridad a nivel de fila.** Todas las tablas tienen RLS activado **sin políticas**: en Supabase, los roles
+de su API REST (`anon`, `authenticated`) no ven ni tocan nada, y además se les retiran los permisos (migración
+`0001`). La aplicación se conecta como el propietario de las tablas (`postgres` en Supabase, con `BYPASSRLS`)
+y aplica los permisos en el servidor. **Toda tabla nueva lleva `.enableRLS()`**; `src/server/db/schema.test.ts`
+falla si alguna lo olvida.
+
 **Datos calculados, no guardados:** la fase visible del torneo (de su estado y fechas), los nombres de las
 rondas, la clasificación de liga, el campeón y el ranking. Así nunca se desincronizan.
 
@@ -83,12 +90,17 @@ rondas, la clasificación de liga, el campeón y el ranking. Así nunca se desin
 
 ## 5. Seguridad
 
+- Zonas privadas (`/dashboard`, `/admin`): cada página comprueba la sesión en el servidor con su propia ruta
+  (`requireUser`, `requireAdminArea`, `requirePlatformAdmin`) y, sin sesión, redirige al acceso para volver
+  después a esa página. No hay *proxy* (middleware) delante: en Cloudflare rompía las peticiones con cookies.
+  `src/server/auth/private-pages.test.ts` comprueba que ninguna página privada se quede sin esa llamada.
 - Acciones de servidor = endpoints públicos: validación Zod y permiso en cada una. Next comprueba el origen
   (CSRF) en las acciones; Better Auth, en sus rutas.
 - Contraseñas con scrypt (Better Auth); sesiones en base de datos, cookie HttpOnly, Secure en producción,
   SameSite=Lax; al restablecer la contraseña se cierran las demás sesiones.
 - Límite de peticiones en Postgres (atómico): acceso, registro, recuperación, creación de equipos y torneos,
-  invitaciones, inscripciones, resultados, disputas y subidas.
+  invitaciones, inscripciones, resultados, disputas y subidas. La IP del cliente sale de `cf-connecting-ip` en
+  Cloudflare (no la puede falsear el cliente) y de `x-forwarded-for` detrás de Caddy.
 - Sin SQL concatenado (Drizzle parametriza); sin `dangerouslySetInnerHTML`; enlaces externos solo https y con
   `noopener`; imágenes verificadas por firma (sin SVG), servidas con `nosniff`.
 - Cabeceras: CSP, HSTS (producción), `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy`,
@@ -114,3 +126,24 @@ provoca: invitaciones, inscripciones (aprobada, rechazada, en espera, nueva para
 cancelación del torneo, horarios y cambios de horario, resultados comunicados, confirmados y corregidos, y
 disputas abiertas y resueltas. Si hay SMTP y el usuario no lo ha desactivado, se envían también por correo
 después de responder (`after()`), «reclamándolos» primero para no enviar dos veces el mismo.
+
+## 8. Cloudflare Workers
+
+La aplicación se compila como un Worker con **OpenNext** (`npm run build:cf`; en Cloudflare Workers Builds,
+`npm run build` lo hace solo al detectar `WORKERS_CI`). Configuración en `wrangler.jsonc` y
+`open-next.config.ts`. Reglas que impone el entorno:
+
+- **Una conexión a la base por petición.** Un Worker no puede usar conexiones abiertas por otra petición:
+  `getDb()` (`src/server/db/client.ts`) crea un *pool* pequeño por petición, guardado junto al contexto de esa
+  petición, y Cloudflare cierra sus conexiones al terminar. Lo que vive más que una petición (Better Auth)
+  usa `getLongLivedDb()`, que en cada uso delega en la conexión de la petición en curso. **Nunca guardes una
+  conexión en una variable global ni en un objeto que dure más que la petición.**
+- **Hyperdrive** (enlace `HYPERDRIVE`) mantiene las conexiones con Supabase; sin él se usa `DATABASE_URL`.
+  Su caché debe estar desactivada (devolvería sesiones y resultados antiguos).
+- **Sin *proxy* de Next.js** (ver «Seguridad»).
+- **PGlite no entra en el Worker**: al compilar para Cloudflare, `next.config.mjs` lo sustituye por
+  `src/server/db/pglite-unavailable.ts` (ahorra unos 9 MB).
+- **CPU**: comprobar una contraseña (scrypt) gasta ~80 ms; hace falta Workers Paid (el gratuito corta a 10 ms).
+- **Caché en el borde**: `/media/[id]` guarda las imágenes públicas en la caché de Cloudflare (con dominio
+  propio); las evidencias, nunca. Los archivos de `_next/static` se sirven con caché de un año
+  (`public/_headers`).

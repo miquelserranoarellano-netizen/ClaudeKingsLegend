@@ -1,6 +1,7 @@
 # Estado del proyecto
 
-Última actualización: 23 de octubre de 2026 · Primera versión funcional completa, verificada en local.
+Última actualización: 21 de noviembre de 2026 · Preparada para Cloudflare Workers + Supabase (base de datos
+creada). Auditoría completa en `docs/AUDITORIA.md`; despliegue en `docs/DESPLIEGUE-CLOUDFLARE.md`.
 
 ## Qué hay
 
@@ -20,18 +21,27 @@
 | Notificaciones en la aplicación (+ correo si hay SMTP) | Hecho |
 | SEO (metadatos por página, Open Graph, sitemap, robots, canónicas, noindex en zonas privadas) | Hecho |
 | Seguridad (permisos en servidor, CSRF, límites, CSP, cabeceras, auditoría, concurrencia optimista) | Hecho |
-| Despliegue (Dockerfile, docker-compose con PostgreSQL y Caddy, migraciones, health check, guía Hostinger, costes, CI) | Escrito; ver «Sin probar» |
+| Despliegue en **Cloudflare Workers** (OpenNext, `wrangler.jsonc`, Hyperdrive, conexión por petición, caché de imágenes en el borde) | Hecho; probado en local con `workerd` (ver «Sin probar») |
+| Base de datos en **Supabase** (migraciones aplicadas y registradas, RLS en todas las tablas, API REST cerrada, índices) | Hecho y verificado |
+| Correo por **Resend** (API HTTP, para Cloudflare) o SMTP (para Node) | Hecho (Resend sin probar con una clave real) |
+| Despliegue alternativo (Dockerfile, docker-compose con PostgreSQL y Caddy, guía Hostinger) | Escrito; ver «Sin probar» |
 
 ## Cómo se ha verificado
 
-- `npm run check`: tipos, lint y **96 pruebas** (Vitest). Incluyen el motor de cuadros y ligas (todos los
+- `npm run check`: tipos, lint y **126 pruebas** (Vitest). Incluyen el motor de cuadros y ligas (todos los
   tamaños con BYE, doble eliminación completa, correcciones bloqueadas y permitidas, desempates), las reglas
   de fases, inscripciones y permisos, y pruebas de integración contra un Postgres real en memoria:
   registro e inicio de sesión con Better Auth (hash, cuenta suspendida, cookie), equipos (duplicados, tamaño
   máximo, invitaciones), inscripciones duplicadas y jugadores en dos equipos, lista de espera, aprobación
   manual sin superar plazas, torneos privados, generación con BYE, resultados comunicados y validados,
   cierre del torneo, **edición simultánea detectada**, correcciones, disputas, liga y límite de peticiones
-  (incluso con peticiones simultáneas).
+  (incluso con peticiones simultáneas). Desde noviembre, además: RLS en todas las tablas y API de Supabase
+  cerrada (con roles como los de Supabase), sesión comprobada en las 24 páginas privadas y envío por Resend.
+- **Worker de Cloudflare en local** (`opennextjs-cloudflare preview`, motor `workerd`) contra un PostgreSQL 16
+  real: 10 de 11 pruebas e2e (la de recuperación de contraseña oculta el formulario en producción sin correo,
+  a propósito), 0 conexiones abiertas al terminar y 0 errores en el registro.
+- **Supabase**: el esquema creado es idéntico al de las migraciones (comparado por huella) y los asesores de
+  seguridad y rendimiento están revisados (ver `docs/AUDITORIA.md`).
 - `npm run test:e2e`: **11 pruebas** de Playwright con Chrome sobre una base propia rellenada con el seed:
   registro, cierre de sesión, contraseña incorrecta, validación en el navegador, recuperación sin revelar
   cuentas, redirecciones y 404 de permisos, borradores ocultos, creación de equipo con **subida de
@@ -47,11 +57,15 @@
 
 ## Sin probar (dicho con claridad)
 
+- **Cloudflare de verdad**: el Worker se ha compilado y probado en local con `workerd`, pero aún no en la
+  cuenta de Cloudflare: la conexión Hyperdrive ↔ Supabase, el envío con Resend y la caché de imágenes con
+  dominio propio están sin probar. Lo primero tras desplegar: `/api/health`.
 - **Docker**: este ordenador no tiene Docker. El `Dockerfile` y el `docker-compose.yml` siguen la
   configuración que sí se ha probado (compilación, `next start`, migraciones con `pg`), pero la imagen no se
   ha construido nunca. Será lo primero que se compruebe en el VPS.
-- **PostgreSQL de verdad**: el camino de producción se ha probado contra PGlite hablando el protocolo de
-  Postgres, no contra un servidor PostgreSQL 17 real.
+- **PostgreSQL 17**: el camino de producción se ha probado contra un PostgreSQL 16 real (en Node y en
+  `workerd`). La base de Supabase es PostgreSQL 17 y tiene el esquema aplicado, pero la aplicación aún no se
+  ha conectado a ella.
 - **Correo real**: sin SMTP configurado. En desarrollo los enlaces de verificación y recuperación se escriben
   en la consola del servidor; el envío por SMTP está escrito pero no se ha ejecutado.
 - **Accesibilidad**: etiquetas, foco visible, navegación por teclado, «saltar al contenido», regiones y
@@ -87,6 +101,12 @@
 8. **Desempate final por semilla** (orden de aprobación o el que fije la organización), señalado en la tabla.
 9. **Eliminar la cuenta anonimiza** en lugar de borrar la fila, para no romper cuadros ni la auditoría.
 10. **Todas las páginas se renderizan en cada petición** (dependen de la sesión y de resultados en vivo).
+11. **Cloudflare Workers + Supabase** como despliegue principal (lo elegiste tú); Docker/VPS queda como
+    alternativa. Exige **Workers Paid** (5 $/mes): el plan gratuito corta a 10 ms de CPU y comprobar una
+    contraseña gasta unos 80 ms.
+12. **Sin *proxy* (middleware) de Next.js**: en Cloudflare rompía las peticiones con cookies. Cada página
+    privada comprueba la sesión con su ruta exacta (lo vigila una prueba).
+13. **RLS sin políticas** en todas las tablas: la aplicación no usa la API REST de Supabase, así que se cierra.
 
 ## Datos locales
 
@@ -97,8 +117,12 @@ si quieres, `npm run db:seed`.
 
 ## Lo que necesito de ti para publicarla
 
-1. Instalar **Git**, crear el repositorio privado en **GitHub** y subir el código (`docs/TRABAJO-EN-EQUIPO.md`).
-2. Contratar el **VPS KVM 2** de Hostinger con la plantilla Ubuntu + Docker y un **dominio**.
-3. Seguir `docs/DESPLIEGUE.md` (o darme acceso con el MCP de Hostinger o por SSH y lo hago contigo).
-4. Opcional: un buzón SMTP para la verificación de correo y la recuperación de contraseñas.
-5. Antes del lanzamiento: logotipo definitivo y **revisión legal** de privacidad y términos.
+Paso a paso en `docs/DESPLIEGUE-CLOUDFLARE.md`:
+
+1. Cloudflare → **Workers Paid** (5 $/mes).
+2. **Hyperdrive** con la cadena de conexión de Supabase y la caché desactivada; su ID en `wrangler.jsonc`.
+3. En el Worker `claudekingslegend`: variable de compilación `NEXT_PUBLIC_SITE_URL` y secreto
+   `BETTER_AUTH_SECRET`.
+4. Fusionar la rama `claude/great-cannon-uadmuu` en la rama que despliega Cloudflare.
+5. Registrarte y hacerte administrador (SQL en la guía).
+6. Recomendado: Resend para el correo, dominio propio y **revisión legal** de privacidad y términos.

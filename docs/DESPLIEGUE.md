@@ -1,5 +1,8 @@
 # Despliegue en Hostinger (VPS)
 
+> **Opción principal desde noviembre de 2026: Cloudflare Workers + Supabase** — ver
+> [`DESPLIEGUE-CLOUDFLARE.md`](DESPLIEGUE-CLOUDFLARE.md). Esta guía sigue valiendo si prefieres un VPS.
+
 ## 1. Qué contratar
 
 | Necesidad | Producto de Hostinger | Notas |

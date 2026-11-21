@@ -1,18 +1,23 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { Container } from "@/components/layout/section";
 import { NavLinks, type NavItem } from "@/components/layout/nav-links";
 import { Badge } from "@/components/ui/badge";
-import { canManagePlatform } from "@/domain/permissions";
+import { canAccessAdminArea, canManagePlatform } from "@/domain/permissions";
 import { label } from "@/i18n";
-import { requireAdminArea } from "@/server/auth/session";
+import { getCurrentUser } from "@/server/auth/session";
 import { getDb } from "@/server/db/client";
 import { disputes, tournaments } from "@/server/db/schema";
 
 export const metadata: Metadata = { title: { default: "Administración", template: "%s · Administración" }, robots: { index: false, follow: false } };
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const user = await requireAdminArea();
+  const user = await getCurrentUser();
+  // Sin sesión, la propia página redirige al acceso con su ruta exacta en `next` (cada página de /admin
+  // llama a `requireAdminArea` o `requirePlatformAdmin`; lo comprueba src/server/auth/private-pages.test.ts).
+  if (!user) return children;
+  if (!canAccessAdminArea(user)) notFound();
   const admin = canManagePlatform(user);
   const db = await getDb();
   const [open] = await db

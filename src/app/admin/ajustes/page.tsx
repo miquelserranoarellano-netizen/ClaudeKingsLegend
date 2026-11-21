@@ -3,14 +3,15 @@ import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { SettingsForm } from "@/features/admin/components/admin-forms";
 import { getSettings } from "@/features/settings/service";
 import { requirePlatformAdmin } from "@/server/auth/session";
-import { isMailConfigured } from "@/server/mail";
+import { mailProvider } from "@/server/mail";
 
 export const metadata = { title: "Ajustes" };
 
 export default async function SettingsPage() {
   await requirePlatformAdmin("/admin/ajustes");
   const settings = await getSettings();
-  const mail = isMailConfigured();
+  const provider = mailProvider();
+  const mail = provider !== null;
   return (
     <>
       <DashboardTitle title="Ajustes de la plataforma" />
@@ -25,9 +26,11 @@ export default async function SettingsPage() {
           <CardBody>
             <dl className="space-y-2 text-sm">
               <div className="flex justify-between gap-2">
-                <dt className="text-ink-3">Correo (SMTP)</dt>
+                <dt className="text-ink-3">Correo</dt>
                 <dd className={mail ? "font-semibold text-open" : "font-semibold text-warning"}>
-                  {mail ? "Configurado" : "Sin configurar: no se envían correos (verificación, recuperación ni avisos)"}
+                  {mail
+                    ? `Configurado (${provider === "resend" ? "Resend" : "SMTP"})`
+                    : "Sin configurar: no se envían correos (verificación, recuperación ni avisos)"}
                 </dd>
               </div>
               <div className="flex justify-between gap-2">

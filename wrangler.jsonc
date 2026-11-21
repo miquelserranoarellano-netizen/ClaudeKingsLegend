@@ -1,0 +1,28 @@
+// Configuración del Worker de Cloudflare (Next.js con el adaptador OpenNext).
+// Guía completa: docs/DESPLIEGUE-CLOUDFLARE.md
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // Debe coincidir con el nombre del Worker en el panel de Cloudflare (Workers & Pages).
+  "name": "claudekingslegend",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-11-19",
+  // `nodejs_compat`: Next.js, `pg` y Better Auth usan APIs de Node.
+  // `global_fetch_strictly_public`: `fetch` no puede alcanzar direcciones internas de Cloudflare.
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  // Las variables y secretos se gestionan en el panel (Settings → Variables and Secrets): un despliegue
+  // no debe borrarlos.
+  "keep_vars": true,
+  // Ejecuta el Worker cerca de la base de datos (Supabase, Irlanda) cuando eso acelera las respuestas:
+  // cada página hace varias consultas seguidas.
+  "placement": { "mode": "smart" },
+  "observability": { "enabled": true }
+
+  // Hyperdrive (muy recomendado con Supabase): crea la configuración en el panel (Storage & Databases →
+  // Hyperdrive) y añade aquí su id, después de la línea de "observability" (con una coma antes):
+  //
+  // "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "PEGA_AQUÍ_EL_ID" }]
+}

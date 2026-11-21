@@ -20,6 +20,8 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm run build
+      # El Worker de Cloudflare (OpenNext): detecta antes de desplegar lo que rompería el adaptador.
+      - run: npm run build:cf
 
   e2e:
     runs-on: ubuntu-latest

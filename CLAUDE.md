@@ -13,8 +13,13 @@ comentarios en español de España, tuteando.
   `runAction`). `src/app/` solo compone páginas.
 - **Permisos en el servidor, siempre.** Cada servicio recibe el `actor` y llama a `src/domain/permissions.ts`.
   Ocultar un botón no protege nada.
-- **Base de datos.** Esquema en `src/server/db/schema/`. Una migración aplicada no se edita: cambia el esquema
-  y ejecuta `npm run db:generate`. Estados como enums de Postgres. Cambios de cuadro siempre bajo bloqueo del
+- **Producción: Cloudflare Workers (OpenNext) + Supabase** (`docs/DESPLIEGUE-CLOUDFLARE.md`). Nada de conexiones
+  a la base en variables globales ni en objetos que duren más que una petición (usa `getDb()`, o
+  `getLongLivedDb()` para objetos de larga vida); sin *proxy*/middleware de Node. `npm run build:cf` compila el
+  Worker.
+- **Base de datos.** Esquema en `src/server/db/schema/`; toda tabla nueva lleva `.enableRLS()` (Supabase).
+  Una migración aplicada no se edita: cambia el esquema y ejecuta `npm run db:generate`; en Supabase se
+  aplica antes de desplegar el código que la usa. Estados como enums de Postgres. Cambios de cuadro siempre bajo bloqueo del
   torneo y de la fase (`lockMatch` / `lockAndLoadStage`), y con `version` para detectar ediciones simultáneas.
 - **Nada falso.** Sin datos inventados: si algo no está configurado (correo, etc.), se dice en pantalla. Los
   datos del seed llevan `is_demo` y se muestran como «Demo».

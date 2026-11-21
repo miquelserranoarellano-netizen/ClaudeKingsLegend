@@ -8,12 +8,15 @@ import { canAccessAdminArea } from "@/domain/permissions";
 import { unreadCount } from "@/features/notifications/service";
 import { myInvitations } from "@/features/teams/queries";
 import { label } from "@/i18n";
-import { requireUser } from "@/server/auth/session";
+import { getCurrentUser } from "@/server/auth/session";
 
 export const metadata: Metadata = { title: "Mi panel", robots: { index: false, follow: false } };
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const user = await requireUser("/dashboard");
+  const user = await getCurrentUser();
+  // Sin sesión, la propia página redirige al acceso con su ruta exacta en `next` (cada página del panel
+  // llama a `requireUser`; lo comprueba src/server/auth/private-pages.test.ts).
+  if (!user) return children;
   const [invitations, unread] = await Promise.all([myInvitations(user.id), unreadCount(user.id)]);
   const items: NavItem[] = [
     { href: "/dashboard", label: "Resumen", exact: true },
