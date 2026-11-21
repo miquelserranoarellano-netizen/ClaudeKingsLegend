@@ -21,6 +21,13 @@
   "placement": { "mode": "smart" },
   "observability": { "enabled": true },
   // Hyperdrive «kings-legend-supabase»: conexiones con Supabase (caché desactivada; ver
-  // docs/DESPLIEGUE-CLOUDFLARE.md).
-  "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "291a73d6b9dc460ba46442fe708aa238" }]
+  // docs/DESPLIEGUE-CLOUDFLARE.md). `localConnectionString` solo se usa en local (`npm run preview:cf` y
+  // el paso previo de `opennextjs-cloudflare deploy`, que lo exige): un Postgres en tu equipo, sin secretos.
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "291a73d6b9dc460ba46442fe708aa238",
+      "localConnectionString": "postgres://postgres:postgres@127.0.0.1:5432/postgres"
+    }
+  ]
 }
