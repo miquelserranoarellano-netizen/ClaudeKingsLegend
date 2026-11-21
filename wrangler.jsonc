@@ -19,10 +19,8 @@
   // Ejecuta el Worker cerca de la base de datos (Supabase, Irlanda) cuando eso acelera las respuestas:
   // cada página hace varias consultas seguidas.
   "placement": { "mode": "smart" },
-  "observability": { "enabled": true }
-
-  // Hyperdrive (muy recomendado con Supabase): crea la configuración en el panel (Storage & Databases →
-  // Hyperdrive) y añade aquí su id, después de la línea de "observability" (con una coma antes):
-  //
-  // "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "PEGA_AQUÍ_EL_ID" }]
+  "observability": { "enabled": true },
+  // Hyperdrive «kings-legend-supabase»: conexiones con Supabase (caché desactivada; ver
+  // docs/DESPLIEGUE-CLOUDFLARE.md).
+  "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "291a73d6b9dc460ba46442fe708aa238" }]
 }
