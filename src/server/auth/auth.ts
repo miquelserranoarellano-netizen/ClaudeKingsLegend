@@ -4,7 +4,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { APIError } from "better-auth/api";
 import { nextCookies } from "better-auth/next-js";
 import { eq } from "drizzle-orm";
-import { getDb, type Db } from "../db/client";
+import { getLongLivedDb, isCloudflareWorker, type Db } from "../db/client";
 import { accounts, sessions, users, verifications } from "../db/schema";
 import { isMailConfigured, sendMail } from "../mail";
 import { consumeRateLimit } from "../rate-limit";
@@ -91,8 +91,9 @@ function createAuth(db: Db) {
     },
     advanced: {
       cookiePrefix: "kl",
-      // Detrás del proxy inverso (Caddy), que sustituye esta cabecera por la IP real del cliente.
-      ipAddress: { ipAddressHeaders: ["x-forwarded-for"] },
+      // IP real del cliente para los límites de intentos. En Cloudflare, `cf-connecting-ip` la pone siempre
+      // Cloudflare (el cliente no puede falsearla). Detrás de Caddy, este sustituye `x-forwarded-for`.
+      ipAddress: { ipAddressHeaders: isCloudflareWorker() ? ["cf-connecting-ip"] : ["x-forwarded-for"] },
     },
     databaseHooks: {
       user: {
@@ -123,9 +124,13 @@ export type Auth = ReturnType<typeof createAuth>;
 
 const globalForAuth = globalThis as typeof globalThis & { __klAuth?: Promise<Auth> };
 
+/**
+ * Better Auth se crea una vez por proceso. En Cloudflare recibe una base de datos que delega en la conexión
+ * de cada petición (ver `getLongLivedDb`), porque un Worker no puede reutilizar conexiones entre peticiones.
+ */
 export function getAuth(): Promise<Auth> {
   if (!globalForAuth.__klAuth) {
-    const creating = getDb().then(createAuth);
+    const creating = getLongLivedDb().then(createAuth);
     globalForAuth.__klAuth = creating;
     creating.catch(() => {
       if (globalForAuth.__klAuth === creating) globalForAuth.__klAuth = undefined;

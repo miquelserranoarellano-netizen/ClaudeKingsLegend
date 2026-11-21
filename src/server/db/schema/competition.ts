@@ -52,7 +52,7 @@ export const tournamentStages = pgTable(
     updatedAt: updatedAt(),
   },
   (t) => [uniqueIndex("stages_tournament_number_uq").on(t.tournamentId, t.number)],
-);
+).enableRLS();
 
 /** Ronda de un cuadro o jornada de una liga. El nombre visible se calcula, no se guarda. */
 export const tournamentRounds = pgTable(
@@ -72,9 +72,10 @@ export const tournamentRounds = pgTable(
   },
   (t) => [
     uniqueIndex("rounds_stage_bracket_number_uq").on(t.stageId, t.bracket, t.number),
+    index("rounds_tournament_idx").on(t.tournamentId),
     check("rounds_best_of_ck", sql`${t.bestOf} in (1, 3, 5, 7)`),
   ],
-);
+).enableRLS();
 
 export const matches = pgTable(
   "matches",
@@ -128,6 +129,10 @@ export const matches = pgTable(
     index("matches_participant_a_idx").on(t.participantAId),
     index("matches_participant_b_idx").on(t.participantBId),
     index("matches_scheduled_idx").on(t.scheduledAt),
+    // Cargar una fase completa y seguir los enlaces del cuadro (y al borrarlo, comprobar quién apunta a quién).
+    index("matches_stage_idx").on(t.stageId),
+    index("matches_next_idx").on(t.nextMatchId).where(sql`${t.nextMatchId} is not null`),
+    index("matches_loser_next_idx").on(t.loserNextMatchId).where(sql`${t.loserNextMatchId} is not null`),
     check("matches_best_of_ck", sql`${t.bestOf} in (1, 3, 5, 7)`),
     check(
       "matches_winner_ck",
@@ -135,7 +140,7 @@ export const matches = pgTable(
     ),
     check("matches_distinct_ck", sql`${t.participantAId} is null or ${t.participantAId} <> ${t.participantBId}`),
   ],
-);
+).enableRLS();
 
 /** Partidas individuales dentro de una serie (opcional: solo si se comunica el detalle). */
 export const matchGames = pgTable(
@@ -156,7 +161,7 @@ export const matchGames = pgTable(
     uniqueIndex("match_games_number_uq").on(t.matchId, t.gameNumber),
     check("match_games_duration_ck", sql`${t.durationSeconds} is null or ${t.durationSeconds} between 60 and 10800`),
   ],
-);
+).enableRLS();
 
 /**
  * Resultado comunicado por un capitán (o introducido por la organización). Nunca se borra: si se
@@ -195,7 +200,7 @@ export const matchResults = pgTable(
       .on(t.matchId, t.reportingParticipantId)
       .where(sql`${t.status} = 'pending'`),
   ],
-);
+).enableRLS();
 
 export const resultEvidence = pgTable(
   "result_evidence",
@@ -215,10 +220,14 @@ export const resultEvidence = pgTable(
   },
   (t) => [
     index("result_evidence_match_idx").on(t.matchId),
+    // `/media/[id]` busca la evidencia por su imagen para decidir quién puede verla.
+    index("result_evidence_media_idx").on(t.mediaId).where(sql`${t.mediaId} is not null`),
+    index("result_evidence_result_idx").on(t.resultId).where(sql`${t.resultId} is not null`),
+    index("result_evidence_dispute_idx").on(t.disputeId).where(sql`${t.disputeId} is not null`),
     check("result_evidence_source_ck", sql`${t.mediaId} is not null or ${t.url} is not null`),
     check("result_evidence_owner_ck", sql`${t.resultId} is not null or ${t.disputeId} is not null`),
   ],
-);
+).enableRLS();
 
 export const disputes = pgTable(
   "disputes",
@@ -246,5 +255,7 @@ export const disputes = pgTable(
     // Una sola disputa abierta por partido.
     uniqueIndex("disputes_open_uq").on(t.matchId).where(sql`${t.status} = 'open'`),
     index("disputes_tournament_status_idx").on(t.tournamentId, t.status),
+    // Historial de disputas de un partido (abiertas y cerradas) en su página.
+    index("disputes_match_idx").on(t.matchId),
   ],
-);
+).enableRLS();

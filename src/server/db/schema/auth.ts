@@ -34,7 +34,7 @@ export const users = pgTable(
     ...timestamps,
   },
   (t) => [index("users_role_idx").on(t.role)],
-);
+).enableRLS();
 
 export const sessions = pgTable(
   "sessions",
@@ -50,7 +50,7 @@ export const sessions = pgTable(
     ...timestamps,
   },
   (t) => [index("sessions_user_idx").on(t.userId)],
-);
+).enableRLS();
 
 export const accounts = pgTable(
   "accounts",
@@ -71,7 +71,7 @@ export const accounts = pgTable(
     ...timestamps,
   },
   (t) => [index("accounts_user_idx").on(t.userId)],
-);
+).enableRLS();
 
 export const verifications = pgTable(
   "verifications",
@@ -83,4 +83,4 @@ export const verifications = pgTable(
     ...timestamps,
   },
   (t) => [index("verifications_identifier_idx").on(t.identifier)],
-);
+).enableRLS();

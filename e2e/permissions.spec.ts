@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { signIn } from "./helpers";
+import { signIn, signOut } from "./helpers";
 
 test.describe("permisos", () => {
   test("sin sesión, el panel redirige al acceso y vuelve después", async ({ page }) => {
@@ -31,8 +31,8 @@ test.describe("permisos", () => {
     await page.getByLabel("Nombre").fill("Borrador secreto E2E");
     await page.getByRole("button", { name: "Crear borrador" }).click();
     await expect(page.getByText("Borrador creado")).toBeVisible();
-    await page.getByRole("button", { name: "Menú de la cuenta" }).click();
-    await page.getByRole("button", { name: "Cerrar sesión" }).click();
+    // Se espera a que la sesión esté cerrada: si se navega antes, la petición de cierre se cancela.
+    await signOut(page);
     const response = await page.goto("/torneos/borrador-secreto-e2e");
     expect(response?.status()).toBe(404);
   });

@@ -46,7 +46,7 @@ export const notifications = pgTable(
     index("notifications_user_created_idx").on(t.userId, t.createdAt),
     index("notifications_unread_idx").on(t.userId).where(sql`${t.readAt} is null`),
   ],
-);
+).enableRLS();
 
 export const announcements = pgTable(
   "announcements",
@@ -64,8 +64,12 @@ export const announcements = pgTable(
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
-  (t) => [index("announcements_status_published_idx").on(t.status, t.publishedAt)],
-);
+  (t) => [
+    index("announcements_status_published_idx").on(t.status, t.publishedAt),
+    // Anuncios de un torneo concreto (página del torneo).
+    index("announcements_tournament_idx").on(t.tournamentId).where(sql`${t.tournamentId} is not null`),
+  ],
+).enableRLS();
 
 /**
  * Registro de auditoría: quién hizo qué, sobre qué y con qué datos (antes y después). Solo se inserta;
@@ -90,7 +94,7 @@ export const auditLogs = pgTable(
     index("audit_actor_idx").on(t.actorId),
     index("audit_tournament_idx").on(t.tournamentId),
   ],
-);
+).enableRLS();
 
 /** Ajustes de la plataforma editables desde /admin (clave → valor JSON validado con Zod al leer). */
 export const platformSettings = pgTable("platform_settings", {
@@ -98,7 +102,7 @@ export const platformSettings = pgTable("platform_settings", {
   value: jsonb("value").notNull(),
   updatedById: text("updated_by_id").references(() => users.id, { onDelete: "set null" }),
   updatedAt: updatedAt(),
-});
+}).enableRLS();
 
 /** Páginas de contenido editable (privacidad, términos, contacto). */
 export const contentPages = pgTable("content_pages", {
@@ -109,13 +113,13 @@ export const contentPages = pgTable("content_pages", {
   legalReviewed: boolean("legal_reviewed").notNull().default(false),
   updatedById: text("updated_by_id").references(() => users.id, { onDelete: "set null" }),
   updatedAt: updatedAt(),
-});
+}).enableRLS();
 
 /** Ventanas fijas de límite de peticiones (inicio de sesión, registro, acciones sensibles). */
 export const rateLimits = pgTable("rate_limits", {
   key: text("key").primaryKey(),
   windowStart: timestamp("window_start", { withTimezone: true }).notNull(),
   count: integer("count").notNull(),
-});
+}).enableRLS();
 
 export type RateLimitRow = typeof rateLimits.$inferSelect;

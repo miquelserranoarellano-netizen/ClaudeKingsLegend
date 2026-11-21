@@ -5,6 +5,8 @@ import { fileURLToPath } from "node:url";
 // `typescript`, que es solo de desarrollo.
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 const isProd = process.env.NODE_ENV === "production";
+/** Compilación para Cloudflare Workers (la define `scripts/build.mjs`; ver docs/DESPLIEGUE-CLOUDFLARE.md). */
+const forCloudflare = process.env.KL_DEPLOY_TARGET === "cloudflare";
 
 /**
  * Política de seguridad de contenidos. Solo recursos del propio dominio; sin marcos de terceros ni
@@ -27,10 +29,14 @@ const csp = [
 
 /** @type {import("next").NextConfig} */
 const nextConfig = {
-  // PGlite (Postgres embebido) y `pg` cargan binarios y WASM propios: no deben empaquetarse.
-  serverExternalPackages: ["@electric-sql/pglite", "pg"],
-  // Hay otro package-lock.json más arriba (C:\Users\mique); se fija la raíz para que Turbopack no dude.
-  turbopack: { root: projectRoot },
+  // PGlite (Postgres embebido) y `pg` cargan binarios y WASM propios: no deben empaquetarse. En Cloudflare
+  // PGlite no se usa: se sustituye por un módulo vacío para no meter su WASM en el Worker.
+  serverExternalPackages: forCloudflare ? ["pg"] : ["@electric-sql/pglite", "pg"],
+  turbopack: {
+    // Hay otro package-lock.json más arriba (C:\Users\mique); se fija la raíz para que Turbopack no dude.
+    root: projectRoot,
+    ...(forCloudflare ? { resolveAlias: { "@electric-sql/pglite": "./src/server/db/pglite-unavailable.ts" } } : {}),
+  },
   // Carpeta del proyecto: la base de datos local y las migraciones se buscan siempre aquí.
   env: { KL_PROJECT_ROOT: projectRoot },
   poweredByHeader: false,
