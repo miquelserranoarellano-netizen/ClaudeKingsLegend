@@ -252,7 +252,7 @@ export default async function MatchPage({ params, searchParams }: { params: Prom
                     <p className="text-sm whitespace-pre-line text-ink-2">{d.viewer.canSeePrivate || x.status !== "open" ? x.reason : "Incidencia en revisión."}</p>
                     {d.viewer.canSeePrivate && <Evidence items={x.evidence} />}
                     {x.resolution && (
-                      <p className="rounded-lg bg-surface-2 px-3 py-2 text-sm">
+                      <p className="rounded-sm bg-surface-2 px-3 py-2 text-sm">
                         <strong>Resolución ({x.resolverName ?? "organización"}):</strong> {x.resolution}
                       </p>
                     )}

@@ -12,12 +12,14 @@ export function Disclosure({
   label,
   button,
   children,
+  className,
   panelClassName,
   buttonClassName,
 }: {
   label: string;
   button: ReactNode;
   children: ReactNode;
+  className?: string;
   panelClassName?: string;
   buttonClassName?: string;
 }) {
@@ -54,7 +56,7 @@ export function Disclosure({
   }, [open]);
 
   return (
-    <div ref={root} className="relative">
+    <div ref={root} className={cn("relative", className)}>
       <button
         ref={buttonRef}
         type="button"
@@ -69,7 +71,7 @@ export function Disclosure({
       <div
         id={id}
         hidden={!open}
-        className={cn("absolute right-0 z-50 mt-2 animate-fade-in rounded-card border border-line bg-surface p-1.5 shadow-lift", panelClassName)}
+        className={cn("absolute right-0 z-50 mt-2 animate-fade-in rounded-card border border-line bg-night-2 p-1.5 shadow-lift", panelClassName)}
       >
         {children}
       </div>

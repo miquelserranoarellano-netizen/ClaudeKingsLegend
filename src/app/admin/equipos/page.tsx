@@ -1,3 +1,4 @@
+import { buttonClasses } from "@/components/ui/button";
 import Link from "next/link";
 import { DashboardTitle } from "@/components/layout/dashboard-title";
 import { TeamLogo } from "@/components/ui/avatar";
@@ -20,8 +21,8 @@ export default async function AdminTeamsPage({ searchParams }: { searchParams: P
     <>
       <DashboardTitle title="Equipos" description={`${result.total} equipos activos. Disolver un equipo lo retira de la plataforma y conserva su historial.`} />
       <form action="/admin/equipos" className="mb-4 flex gap-2">
-        <input name="q" defaultValue={q} placeholder="Nombre o etiqueta" aria-label="Buscar equipos" className="h-9 flex-1 rounded-lg border border-line-strong bg-surface px-3 text-sm" />
-        <button className="h-9 rounded-lg bg-night px-4 text-sm font-semibold text-white">Buscar</button>
+        <input name="q" defaultValue={q} placeholder="Nombre o etiqueta" aria-label="Buscar equipos" className="h-9 flex-1 rounded-sm border border-line-strong bg-surface px-3 text-sm" />
+        <button className={buttonClasses("primary", "md", "h-9")}>Buscar</button>
       </form>
       <Card className="overflow-hidden">
         <ul className="divide-y divide-line">

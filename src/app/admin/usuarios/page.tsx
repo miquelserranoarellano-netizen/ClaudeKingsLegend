@@ -1,3 +1,4 @@
+import { buttonClasses } from "@/components/ui/button";
 import Link from "next/link";
 import { DashboardTitle } from "@/components/layout/dashboard-title";
 import { Badge } from "@/components/ui/badge";
@@ -24,14 +25,14 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
     <>
       <DashboardTitle title="Usuarios" description={`${result.total} cuentas. Cambia roles o suspende cuentas: los cambios tienen efecto inmediato y quedan auditados.`} />
       <form action="/admin/usuarios" className="mb-4 flex flex-wrap gap-2">
-        <input name="q" defaultValue={q} placeholder="Correo, nombre o identificador" aria-label="Buscar usuarios" className="h-9 min-w-60 flex-1 rounded-lg border border-line-strong bg-surface px-3 text-sm" />
-        <select name="rol" defaultValue={role ?? ""} aria-label="Filtrar por rol" className="h-9 rounded-lg border border-line-strong bg-surface px-3 text-sm">
+        <input name="q" defaultValue={q} placeholder="Correo, nombre o identificador" aria-label="Buscar usuarios" className="h-9 min-w-60 flex-1 rounded-sm border border-line-strong bg-surface px-3 text-sm" />
+        <select name="rol" defaultValue={role ?? ""} aria-label="Filtrar por rol" className="h-9 rounded-sm border border-line-strong bg-surface px-3 text-sm">
           <option value="">Todos los roles</option>
           <option value="user">Jugadores</option>
           <option value="organizer">Organizadores</option>
           <option value="admin">Administradores</option>
         </select>
-        <button className="h-9 rounded-lg bg-night px-4 text-sm font-semibold text-white">Buscar</button>
+        <button className={buttonClasses("primary", "md", "h-9")}>Buscar</button>
       </form>
       <Card className="overflow-x-auto">
         <table className="w-full min-w-[52rem] text-sm">

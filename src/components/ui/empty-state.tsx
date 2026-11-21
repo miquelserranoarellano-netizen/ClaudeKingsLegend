@@ -26,10 +26,10 @@ export function EmptyState({
         className,
       )}
     >
-      <span className="flex size-12 items-center justify-center rounded-xl bg-surface-2 text-ink-2">
-        <Icon aria-hidden className="size-6" />
+      <span className="flex size-12 rotate-45 items-center justify-center border border-brand/50 bg-night text-brand shadow-[0_0_20px_-6px_rgb(200_170_110/0.6)]">
+        <Icon aria-hidden className="size-5 -rotate-45" />
       </span>
-      <p className="font-display text-xl font-bold tracking-tight text-ink uppercase">{title}</p>
+      <p className="mt-2 font-display text-xl font-bold tracking-[0.06em] text-ink uppercase">{title}</p>
       {children && <div className="max-w-md text-sm text-ink-3">{children}</div>}
       {action && <div className="mt-2 flex flex-wrap justify-center gap-2">{action}</div>}
     </div>

@@ -49,6 +49,6 @@ paralelo con pocos conflictos:
 | Motor de competición | `domain/competition`, `features/competition` | Fase de grupos + eliminatoria, tercer puesto, sistema suizo. |
 | Partidos, resultados y disputas | `features/matches` | Detalle por partida (campeones, KDA), recordatorios antes del partido. |
 | Administración | `app/admin`, `features/admin` | Exportaciones, estadísticas de uso. |
-| Diseño e interfaz | `components/`, `app/globals.css` | Logotipo definitivo, modo oscuro, repaso de accesibilidad. |
+| Diseño e interfaz | `components/`, `app/globals.css` | Modo claro opcional, auditoría de accesibilidad (axe y lector de pantalla), arte propio para torneos destacados. |
 | Infraestructura | `Dockerfile`, `docker-compose.yml`, `scripts/`, `.github/` | Despliegue automático desde GitHub, copias fuera del servidor. |
 | Idioma | `src/i18n` | Inglés: mover los textos de cada página al diccionario. |

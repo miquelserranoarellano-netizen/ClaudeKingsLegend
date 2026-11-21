@@ -30,15 +30,18 @@ export function NavLinks({ items, className, vertical = false }: { items: NavIte
               href={item.href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "relative flex items-center rounded-md px-3 py-2 text-sm font-semibold transition-colors",
-                active ? "text-ink" : "text-ink-3 hover:bg-surface-2 hover:text-ink",
-                !vertical && active && "after:absolute after:inset-x-3 after:-bottom-[13px] after:h-0.5 after:bg-brand",
-                vertical && active && "bg-brand-soft text-brand-ink",
+                "relative flex items-center px-3 py-2 font-display text-[0.95rem] font-bold tracking-[0.12em] uppercase transition-colors",
+                active ? "text-brand-strong" : "text-ink-2 hover:text-ink",
+                !vertical &&
+                  "after:absolute after:inset-x-3 after:-bottom-[13px] after:h-0.5 after:bg-brand after:opacity-0 after:shadow-[0_0_10px_rgb(200_170_110/0.9)] after:transition-opacity hover:after:opacity-40",
+                !vertical && active && "after:opacity-100 hover:after:opacity-100",
+                vertical && "border-l-2 border-transparent hover:bg-white/5",
+                vertical && active && "border-brand bg-brand-soft text-brand-ink",
               )}
             >
               {item.label}
               {item.count ? (
-                <span className="ml-auto inline-flex min-w-5 items-center justify-center rounded-full bg-brand px-1.5 text-[11px] leading-5 font-bold text-white tabular">
+                <span className="ml-auto inline-flex min-w-5 items-center justify-center rounded-full bg-hex px-1.5 font-sans text-[11px] leading-5 font-bold tracking-normal text-night tabular">
                   {item.count}
                 </span>
               ) : null}

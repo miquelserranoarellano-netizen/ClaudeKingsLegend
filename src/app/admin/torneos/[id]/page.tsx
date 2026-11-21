@@ -78,7 +78,7 @@ export default async function ManageTournamentPage({ params, searchParams }: { p
         }
       />
       {(flags.creado || flags.guardado) && (
-        <p role="status" className="mb-4 rounded-lg bg-open-soft px-4 py-2.5 text-sm text-open">
+        <p role="status" className="mb-4 rounded-sm bg-open-soft px-4 py-2.5 text-sm text-open">
           {flags.creado ? "Borrador creado. Revísalo y publícalo cuando esté listo." : "Cambios guardados."}
         </p>
       )}

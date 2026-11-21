@@ -8,7 +8,7 @@ import type { ActionState } from "@/lib/action-state";
 import { Button, type ButtonSize, type ButtonVariant } from "./button";
 
 const control =
-  "w-full rounded-lg border border-line-strong bg-surface px-3 text-sm text-ink placeholder:text-ink-3 transition-colors hover:border-ink-3 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20 aria-[invalid=true]:border-danger disabled:bg-surface-2 disabled:text-ink-3";
+  "w-full rounded-sm border border-line-strong bg-night/70 px-3 text-sm text-ink placeholder:text-ink-3 transition-colors hover:border-brand/50 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/25 aria-[invalid=true]:border-danger disabled:bg-surface-2 disabled:text-ink-3";
 
 export function Input({ className, ...props }: ComponentProps<"input">) {
   return <input className={cn(control, "h-10", className)} {...props} />;
@@ -127,8 +127,8 @@ export function FormMessage({ state, className }: { state: ActionState<unknown>;
     <div
       role={ok ? "status" : "alert"}
       className={cn(
-        "flex animate-fade-in items-start gap-2 rounded-lg px-3 py-2.5 text-sm",
-        ok ? "bg-open-soft text-open" : "bg-danger-soft text-danger",
+        "flex animate-fade-in items-start gap-2 rounded-sm border px-3 py-2.5 text-sm",
+        ok ? "border-open/35 bg-open-soft text-open" : "border-danger/35 bg-danger-soft text-danger",
         className,
       )}
     >

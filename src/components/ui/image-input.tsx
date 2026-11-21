@@ -73,7 +73,7 @@ export function ImageInput({
           className={cn(
             "flex shrink-0 items-center justify-center overflow-hidden border border-dashed border-line-strong bg-surface-2 text-ink-3",
             frame,
-            shape === "round" ? "rounded-full" : "rounded-lg",
+            shape === "round" ? "rounded-full" : "rounded-sm",
           )}
         >
           {preview ? (
@@ -86,7 +86,7 @@ export function ImageInput({
         <div className="space-y-1">
           <label
             htmlFor={id}
-            className="inline-flex h-9 cursor-pointer items-center rounded-lg border border-line-strong bg-surface px-3 text-sm font-semibold hover:bg-surface-2 focus-within:ring-2"
+            className="inline-flex h-9 cursor-pointer items-center rounded-sm border border-line-strong bg-surface px-3 text-sm font-semibold hover:bg-surface-2 focus-within:ring-2"
           >
             {busy ? "Procesando…" : preview ? "Cambiar imagen" : "Elegir imagen"}
           </label>

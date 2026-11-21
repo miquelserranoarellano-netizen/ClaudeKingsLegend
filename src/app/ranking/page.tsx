@@ -2,10 +2,12 @@ import { BarChart3, Crown } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Container, PageHeader } from "@/components/layout/section";
+import { podiumClass } from "@/components/ui/podium";
 import { TeamLogo } from "@/components/ui/avatar";
 import { EmptyState } from "@/components/ui/empty-state";
 import { DemoBadge } from "@/components/ui/status-badge";
 import { teamRanking } from "@/features/competition/queries";
+import { cn } from "@/lib/cn";
 
 export const metadata: Metadata = {
   title: "Ranking de equipos",
@@ -45,8 +47,14 @@ export default async function RankingPage() {
               </thead>
               <tbody className="divide-y divide-line">
                 {rows.map((row, index) => (
-                  <tr key={row.teamId}>
-                    <td className="px-3 py-3 text-center font-display text-xl font-extrabold text-ink-3 tabular">{index + 1}</td>
+                  <tr
+                    key={row.teamId}
+                    className={cn(
+                      "transition-colors hover:bg-white/[0.03]",
+                      index === 0 && "bg-[linear-gradient(90deg,rgb(232_199_122/0.14),transparent_60%)] shadow-[inset_3px_0_0_var(--color-trophy)]",
+                    )}
+                  >
+                    <td className={cn("px-3 py-3 text-center font-display text-xl font-extrabold tabular", podiumClass(index + 1))}>{index + 1}</td>
                     <td className="px-3 py-3">
                       <span className="flex items-center gap-3">
                         <TeamLogo name={row.name} tag={row.tag} mediaId={row.logoMediaId} size="sm" />

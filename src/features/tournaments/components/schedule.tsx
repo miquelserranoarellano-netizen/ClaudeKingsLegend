@@ -20,7 +20,7 @@ function Row({ match, slug }: { match: MatchView; slug: string }) {
   const aWon = decided && match.winnerId === match.a?.id;
   const bWon = decided && match.winnerId === match.b?.id;
   return (
-    <li className="relative grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-1 px-4 py-3 hover:bg-surface-2/60 sm:grid-cols-[7rem_1fr_auto]">
+    <li className="relative grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-1 px-4 py-3 transition-colors hover:bg-white/[0.03] sm:grid-cols-[7rem_1fr_auto]">
       <span className="text-xs text-ink-3 tabular sm:text-sm">
         {match.scheduledAt ? `${formatShortDate(match.scheduledAt)} · ${formatTime(match.scheduledAt)}` : "Sin fecha"}
       </span>
@@ -31,7 +31,11 @@ function Row({ match, slug }: { match: MatchView; slug: string }) {
           className="shrink-0 font-display text-base font-extrabold tabular after:absolute after:inset-0"
           aria-label={`Ver partido: ${match.a?.name ?? "por decidir"} contra ${match.b?.name ?? "por decidir"}`}
         >
-          {decided && !match.isBye ? `${match.scoreA ?? 0} : ${match.scoreB ?? 0}` : <span className="text-sm text-ink-3">VS</span>}
+          {decided && !match.isBye ? (
+            <span className="text-brand-strong">{`${match.scoreA ?? 0} : ${match.scoreB ?? 0}`}</span>
+          ) : (
+            <span className="text-sm tracking-[0.2em] text-hex">VS</span>
+          )}
         </Link>
         <Side p={match.b} dead={match.bDead} won={bWon} right />
       </span>
@@ -51,7 +55,7 @@ export function Schedule({ rounds, slug }: { rounds: RoundView[]; slug: string }
         if (visible.length === 0) return null;
         return (
           <section key={round.id} aria-label={roundLabel(round.name)}>
-            <h3 className="mb-2 flex items-baseline gap-2 font-display text-lg font-bold uppercase">
+            <h3 className="mb-2 flex items-baseline gap-2 font-display text-lg font-bold tracking-[0.08em] text-brand uppercase">
               {roundLabel(round.name)} <span className="text-xs font-semibold text-ink-3 normal-case">al mejor de {round.bestOf}</span>
             </h3>
             <ul className="divide-y divide-line overflow-hidden rounded-card border border-line bg-surface shadow-card">

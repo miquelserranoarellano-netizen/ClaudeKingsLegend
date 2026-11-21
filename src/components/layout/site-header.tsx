@@ -28,7 +28,7 @@ export async function SiteHeader() {
     : null;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-surface">
+    <header className="sticky top-0 z-40 bg-night/90 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 sm:px-6">
         <Link href="/" aria-label="Kings Legend, ir al inicio" className="shrink-0">
           <Logo />
@@ -44,12 +44,16 @@ export async function SiteHeader() {
               <ButtonLink href="/acceso" variant="ghost">
                 {t("nav.signIn")}
               </ButtonLink>
-              <ButtonLink href="/registro">{t("nav.signUp")}</ButtonLink>
+              <ButtonLink href="/registro" variant="hex">
+                {t("nav.signUp")}
+              </ButtonLink>
             </div>
           )}
           <MobileMenu items={MAIN_NAV} user={headerUser} />
         </div>
       </div>
+      {/* Filo de oro que separa la cabecera del contenido. */}
+      <div aria-hidden className="gold-rule opacity-70" />
     </header>
   );
 }

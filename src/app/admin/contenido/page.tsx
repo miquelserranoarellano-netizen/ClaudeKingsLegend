@@ -27,7 +27,7 @@ export default async function ContentAdminPage({ searchParams }: { searchParams:
             key={p.slug}
             href={`/admin/contenido?pagina=${p.slug}`}
             aria-current={p.slug === selected ? "page" : undefined}
-            className={cn("inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm font-semibold", p.slug === selected ? "border-night bg-night text-white" : "border-line bg-surface")}
+            className={cn("inline-flex items-center gap-2 border px-3 py-1 font-display text-sm font-bold tracking-[0.08em] uppercase", p.slug === selected ? "border-brand bg-brand-soft text-brand-ink" : "border-line bg-surface")}
           >
             {p.title}
             {!p.legalReviewed && <Badge tone="warning" className="normal-case">sin revisar</Badge>}

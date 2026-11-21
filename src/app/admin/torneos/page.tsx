@@ -50,14 +50,14 @@ export default async function AdminTournamentsPage({ searchParams }: { searchPar
             key={f.value}
             href={f.value === "all" ? "/admin/torneos" : `/admin/torneos?estado=${f.value}`}
             aria-current={category === f.value ? "page" : undefined}
-            className={cn("rounded-full border px-3 py-1 text-sm font-semibold", category === f.value ? "border-night bg-night text-white" : "border-line bg-surface text-ink-2 hover:border-ink-3")}
+            className={cn("border px-3 py-1 font-display text-sm font-bold tracking-[0.08em] uppercase", category === f.value ? "border-brand bg-brand-soft text-brand-ink" : "border-line bg-surface text-ink-2 hover:border-ink-3")}
           >
             {f.label}
           </Link>
         ))}
         <form className="ml-auto" action="/admin/torneos">
           {category !== "all" && <input type="hidden" name="estado" value={category} />}
-          <input name="q" defaultValue={q} placeholder="Buscar…" aria-label="Buscar torneos" className="h-9 rounded-lg border border-line-strong bg-surface px-3 text-sm" />
+          <input name="q" defaultValue={q} placeholder="Buscar…" aria-label="Buscar torneos" className="h-9 rounded-sm border border-line-strong bg-surface px-3 text-sm" />
         </form>
       </div>
       {result.items.length === 0 ? (

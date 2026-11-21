@@ -81,7 +81,7 @@ export function TeamRegistrationForm({
         <legend className="mb-1 text-sm font-semibold">
           Plantilla: {teamSize} titulares{maxSubstitutes > 0 ? ` y hasta ${maxSubstitutes} suplentes` : ""}
         </legend>
-        <ul className="divide-y divide-line rounded-lg border border-line">
+        <ul className="divide-y divide-line rounded-sm border border-line">
           {team?.members.map((m) => {
             const role = roles[m.userId] ?? "none";
             return (
@@ -100,7 +100,7 @@ export function TeamRegistrationForm({
                       key={value}
                       className={cn(
                         "cursor-pointer px-2.5 py-1.5 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-brand",
-                        role === value ? "bg-night text-white" : "bg-surface text-ink-2 hover:bg-surface-2",
+                        role === value ? "bg-brand text-night" : "bg-surface text-ink-2 hover:bg-surface-2",
                         m.suspended && "pointer-events-none opacity-50",
                       )}
                     >
@@ -130,7 +130,7 @@ export function TeamRegistrationForm({
         )}
       </fieldset>
       {missingRiot && (
-        <p className="flex items-start gap-2 rounded-lg bg-warning-soft px-3 py-2 text-xs text-warning">
+        <p className="flex items-start gap-2 rounded-sm bg-warning-soft px-3 py-2 text-xs text-warning">
           <AlertTriangle aria-hidden className="mt-0.5 size-3.5 shrink-0" /> Este torneo exige Riot ID: los jugadores marcados deben añadirlo a su perfil antes.
         </p>
       )}

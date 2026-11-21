@@ -32,24 +32,25 @@ export function TournamentCard({ tournament: t, className, headingLevel = "h3" }
   return (
     <article
       className={cn(
-        "group relative flex flex-col overflow-hidden rounded-card border border-line bg-surface shadow-card transition-shadow duration-200 hover:shadow-lift",
+        "group relative flex flex-col overflow-hidden rounded-card border border-line bg-surface shadow-card transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-brand/60 hover:shadow-lift",
         className,
       )}
     >
       <div className="relative aspect-[16/7] overflow-hidden bg-night">
-        <TournamentBanner seed={t.slug} mediaId={t.bannerMediaId} className="transition-transform duration-300 group-hover:scale-[1.02]" />
+        <TournamentBanner seed={t.slug} mediaId={t.bannerMediaId} className="transition-transform duration-500 group-hover:scale-[1.04]" />
+        <div aria-hidden className="absolute inset-x-0 bottom-0 h-px bg-linear-to-r from-transparent via-brand/70 to-transparent" />
         <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
           <PhaseBadge phase={t.phase} className="shadow-sm" />
           {t.isDemo && <DemoBadge />}
         </div>
       </div>
       <div className="flex flex-1 flex-col gap-3 p-4">
-        <p className="text-xs font-semibold tracking-wide text-ink-3 uppercase">
+        <p className="font-display text-xs font-bold tracking-[0.14em] text-hex uppercase">
           {label("format", t.format)} · {label("participantType", t.participantType)}
           {t.region ? ` · ${t.region}` : ""}
         </p>
-        <Heading className="font-display text-xl leading-tight font-bold tracking-tight uppercase">
-          <Link href={`/torneos/${t.slug}`} className="after:absolute after:inset-0 group-hover:text-brand focus-visible:outline-none">
+        <Heading className="font-display text-2xl leading-tight font-bold tracking-[0.04em] uppercase">
+          <Link href={`/torneos/${t.slug}`} className="after:absolute after:inset-0 group-hover:text-brand-strong focus-visible:outline-none">
             {t.name}
           </Link>
         </Heading>
@@ -66,8 +67,14 @@ export function TournamentCard({ tournament: t, className, headingLevel = "h3" }
               <span className="sr-only"> plazas ocupadas</span>
             </span>
           </div>
-          <div className="h-1.5 overflow-hidden rounded-full bg-surface-2" aria-hidden>
-            <div className={cn("h-full rounded-full", fill >= 100 ? "bg-ink-2" : "bg-brand")} style={{ width: `${fill}%` }} />
+          <div className="h-1.5 overflow-hidden bg-night ring-1 ring-line" aria-hidden>
+            <div
+              className={cn(
+                "h-full",
+                fill >= 100 ? "bg-linear-to-r from-hex/70 to-hex shadow-[0_0_10px_rgb(10_200_185/0.7)]" : "bg-linear-to-r from-gold-deep to-brand-strong shadow-[0_0_10px_rgb(200_170_110/0.6)]",
+              )}
+              style={{ width: `${fill}%` }}
+            />
           </div>
           {t.prizeDescription && (
             <p className="flex items-center gap-1.5 text-sm font-medium text-trophy">

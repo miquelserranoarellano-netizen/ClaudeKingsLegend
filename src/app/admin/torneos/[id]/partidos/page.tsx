@@ -40,7 +40,7 @@ export default async function AdminMatchesPage({ params }: { params: Promise<{ i
       ) : (
         <>
           {(awaiting > 0 || disputed > 0) && (
-            <p className="mb-6 flex items-center gap-2 rounded-lg border border-warning/30 bg-warning-soft px-4 py-3 text-sm text-warning">
+            <p className="mb-6 flex items-center gap-2 rounded-sm border border-warning/30 bg-warning-soft px-4 py-3 text-sm text-warning">
               <AlertTriangle aria-hidden className="size-4" />
               {awaiting > 0 && `${awaiting} resultado(s) pendiente(s) de validar. `}
               {disputed > 0 && `${disputed} partido(s) con disputa abierta.`}

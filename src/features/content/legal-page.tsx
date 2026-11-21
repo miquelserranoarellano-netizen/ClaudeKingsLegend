@@ -11,7 +11,7 @@ export async function LegalPage({ slug }: { slug: ContentSlug }) {
     <Container className="max-w-3xl py-10">
       <h1 className="display text-4xl uppercase sm:text-5xl">{page.title}</h1>
       {!page.legalReviewed && (
-        <p className="mt-6 flex items-start gap-2 rounded-lg border border-warning/30 bg-warning-soft px-4 py-3 text-sm text-warning">
+        <p className="mt-6 flex items-start gap-2 rounded-sm border border-warning/30 bg-warning-soft px-4 py-3 text-sm text-warning">
           <AlertTriangle aria-hidden className="mt-0.5 size-4 shrink-0" />
           Borrador pendiente de revisión legal: este texto describe cómo funciona la plataforma, pero debe revisarlo un
           profesional y completarse con los datos del titular antes del lanzamiento.

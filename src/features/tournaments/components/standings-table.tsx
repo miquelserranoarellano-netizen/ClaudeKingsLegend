@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { TeamLogo } from "@/components/ui/avatar";
+import { podiumClass } from "@/components/ui/podium";
 import { label } from "@/i18n";
 import { cn } from "@/lib/cn";
 import type { StandingView } from "../queries";
@@ -21,7 +22,7 @@ export function StandingsTable({
       <div className="overflow-x-auto rounded-card border border-line bg-surface shadow-card" tabIndex={0} aria-label="Clasificación (desplazable)">
         <table className="w-full min-w-[34rem] text-sm">
           <caption className="sr-only">Clasificación de la liga</caption>
-          <thead className="border-b border-line bg-surface-2/60 text-xs tracking-wide text-ink-3 uppercase">
+          <thead className="border-b border-brand/25 bg-night font-display text-xs tracking-[0.16em] text-ink-3 uppercase">
             <tr>
               <th scope="col" className="w-12 px-3 py-2.5 text-center">#</th>
               <th scope="col" className="px-3 py-2.5 text-left">Participante</th>
@@ -40,8 +41,14 @@ export function StandingsTable({
           </thead>
           <tbody className="divide-y divide-line">
             {rows.map((row) => (
-              <tr key={row.participantId} className={cn(row.position === 1 && row.played > 0 && "bg-trophy-soft/50")}>
-                <td className="px-3 py-2.5 text-center font-display text-lg font-extrabold tabular">
+              <tr
+                key={row.participantId}
+                className={cn(
+                  "transition-colors hover:bg-white/[0.03]",
+                  row.position === 1 && row.played > 0 && "bg-[linear-gradient(90deg,rgb(232_199_122/0.16),transparent_70%)] shadow-[inset_3px_0_0_var(--color-trophy)]",
+                )}
+              >
+                <td className={cn("px-3 py-2.5 text-center font-display text-lg font-extrabold tabular", row.played > 0 ? podiumClass(row.position) : "text-ink-3")}>
                   {row.position}
                   {row.decidedBySeed && row.played > 0 ? <span className="text-warning" title="Empate resuelto por semilla">*</span> : null}
                 </td>
@@ -67,7 +74,7 @@ export function StandingsTable({
                   </>
                 )}
                 <td className="px-2 py-2.5 text-center tabular">{row.gameDifference > 0 ? `+${row.gameDifference}` : row.gameDifference}</td>
-                <td className="px-3 py-2.5 text-center font-display text-lg font-extrabold tabular">{row.points}</td>
+                <td className="px-3 py-2.5 text-center font-display text-xl font-extrabold text-brand-strong tabular">{row.points}</td>
               </tr>
             ))}
           </tbody>
