@@ -43,7 +43,7 @@ export default async function AnnouncementsAdminPage({ searchParams }: { searchP
         actions={!showForm ? <ButtonLink href="/admin/anuncios?nuevo=1">Nuevo anuncio</ButtonLink> : undefined}
       />
       {params.guardado && (
-        <p role="status" className="mb-4 rounded-lg bg-open-soft px-4 py-2.5 text-sm text-open">Anuncio guardado.</p>
+        <p role="status" className="mb-4 rounded-sm bg-open-soft px-4 py-2.5 text-sm text-open">Anuncio guardado.</p>
       )}
       {showForm && (
         <Card className="mb-6">

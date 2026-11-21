@@ -4,7 +4,7 @@ const SIZES = { xs: "size-6 text-[10px]", sm: "size-8 text-xs", md: "size-10 tex
 type Size = keyof typeof SIZES;
 
 /** Color estable por nombre, de una paleta fija con buen contraste para las iniciales. */
-const PALETTE = ["#0e1220", "#1f55c7", "#0b7a55", "#7a2a9c", "#ad0b2f", "#00687a", "#6b4e00", "#3f4a5c"];
+const PALETTE = ["#1d3a6b", "#1f55c7", "#0b7a55", "#6d2f9c", "#a3213c", "#00707a", "#8a6420", "#3f4a5c"];
 
 function hash(text: string): number {
   let h = 0;
@@ -56,7 +56,7 @@ export function TeamLogo({ name, tag, mediaId, size = "md", className }: { name:
       <img
         src={mediaUrl(mediaId)}
         alt=""
-        className={cn("shrink-0 rounded-lg bg-surface-2 object-cover", SIZES[size], className)}
+        className={cn("shrink-0 rounded-sm bg-surface-2 object-cover", SIZES[size], className)}
         loading="lazy"
         decoding="async"
       />
@@ -66,7 +66,7 @@ export function TeamLogo({ name, tag, mediaId, size = "md", className }: { name:
   return (
     <span
       aria-hidden
-      className={cn("chamfer-sm inline-flex shrink-0 items-center justify-center rounded-lg font-display font-extrabold text-white tracking-tight", SIZES[size], className)}
+      className={cn("chamfer-sm inline-flex shrink-0 items-center justify-center rounded-sm font-display font-extrabold text-white tracking-tight shadow-[inset_0_0_0_1px_rgb(255_255_255/0.18)]", SIZES[size], className)}
       style={{ backgroundColor: color }}
     >
       {(tag ?? initials(name)).slice(0, 4)}

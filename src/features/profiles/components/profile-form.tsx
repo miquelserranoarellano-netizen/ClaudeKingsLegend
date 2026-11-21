@@ -76,7 +76,7 @@ export function ProfileForm({ profile, mailConfigured }: { profile: ProfileFormV
       <Field label="Biografía" optional error={fieldError(state, "bio")}>
         {(p) => <Textarea {...p} name="bio" defaultValue={profile.bio ?? ""} maxLength={500} placeholder="Campeones favoritos, horario, objetivos…" />}
       </Field>
-      <div className="space-y-3 rounded-lg border border-line bg-page p-4">
+      <div className="space-y-3 rounded-sm border border-line bg-page p-4">
         <Checkbox
           name="isPublic"
           defaultChecked={profile.isPublic}

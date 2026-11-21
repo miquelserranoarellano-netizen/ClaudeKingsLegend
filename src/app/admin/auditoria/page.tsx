@@ -1,3 +1,4 @@
+import { buttonClasses } from "@/components/ui/button";
 import { and, desc, eq, ilike, sql } from "drizzle-orm";
 import { DashboardTitle } from "@/components/layout/dashboard-title";
 import { Card } from "@/components/ui/card";
@@ -38,14 +39,14 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
     <>
       <DashboardTitle title="Auditoría" description="Registro de solo inserción: quién cambió qué y cuándo, con los valores anteriores y nuevos. No contiene contraseñas ni tokens." />
       <form action="/admin/auditoria" className="mb-4 flex flex-wrap gap-2">
-        <select name="entidad" defaultValue={entity ?? ""} aria-label="Tipo de entidad" className="h-9 rounded-lg border border-line-strong bg-surface px-3 text-sm">
+        <select name="entidad" defaultValue={entity ?? ""} aria-label="Tipo de entidad" className="h-9 rounded-sm border border-line-strong bg-surface px-3 text-sm">
           <option value="">Todas las entidades</option>
           {ENTITIES.map((e) => (
             <option key={e} value={e}>{e}</option>
           ))}
         </select>
-        <input name="accion" defaultValue={action} placeholder="Acción (p. ej. result)" aria-label="Acción" className="h-9 rounded-lg border border-line-strong bg-surface px-3 text-sm" />
-        <button className="h-9 rounded-lg bg-night px-4 text-sm font-semibold text-white">Filtrar</button>
+        <input name="accion" defaultValue={action} placeholder="Acción (p. ej. result)" aria-label="Acción" className="h-9 rounded-sm border border-line-strong bg-surface px-3 text-sm" />
+        <button className={buttonClasses("primary", "md", "h-9")}>Filtrar</button>
       </form>
       <Card className="overflow-x-auto">
         <table className="w-full min-w-[48rem] text-sm">

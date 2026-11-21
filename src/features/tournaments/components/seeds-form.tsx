@@ -9,7 +9,7 @@ export function SeedsForm({ tournamentId, participants }: { tournamentId: string
   return (
     <form action={formAction} className="space-y-3">
       <input type="hidden" name="tournamentId" value={tournamentId} />
-      <ol className="divide-y divide-line rounded-lg border border-line">
+      <ol className="divide-y divide-line rounded-sm border border-line">
         {participants.map((p, index) => (
           <li key={p.id} className="flex items-center gap-3 px-3 py-2">
             <input type="hidden" name="participant" value={p.id} />

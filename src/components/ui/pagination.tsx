@@ -14,7 +14,7 @@ export function Pagination({
   hrefFor: (page: number) => string;
 }) {
   if (pageCount <= 1) return null;
-  const item = "inline-flex h-9 items-center gap-1 rounded-lg px-3 text-sm font-semibold";
+  const item = "inline-flex h-9 items-center gap-1 rounded-sm px-3 text-sm font-semibold";
   return (
     <nav aria-label="Paginación" className="flex items-center justify-between gap-3 pt-2">
       {page > 1 ? (

@@ -54,7 +54,7 @@ export default async function AccountSettingsPage() {
         <Card>
           <CardHeader title="Sesiones abiertas" description="Dispositivos en los que tienes la sesión iniciada." />
           <CardBody className="space-y-4">
-            <ul className="divide-y divide-line rounded-lg border border-line">
+            <ul className="divide-y divide-line rounded-sm border border-line">
               {active.map((s) => (
                 <li key={s.id} className="flex flex-wrap justify-between gap-2 px-3 py-2.5 text-sm">
                   <span className="font-medium">{deviceLabel(s.userAgent)}</span>

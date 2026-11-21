@@ -111,7 +111,7 @@ export function ScoreForm({ mode, matchId, version, bestOf, names, players, init
           {showGames && (
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
               {Array.from({ length: bestOf }, (_, i) => (
-                <label key={i} className="flex items-center justify-between gap-2 rounded-lg border border-line px-3 py-2 text-sm">
+                <label key={i} className="flex items-center justify-between gap-2 rounded-sm border border-line px-3 py-2 text-sm">
                   <span className="font-semibold">Partida {i + 1}</span>
                   <select name="games[]" defaultValue="" className="rounded-md border border-line-strong bg-surface px-2 py-1">
                     <option value="">No se jugó</option>

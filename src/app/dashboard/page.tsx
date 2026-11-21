@@ -32,7 +32,7 @@ export default async function DashboardHome() {
 
       <div className="mb-6 space-y-3">
         {!user.hasRiotId && (
-          <p className="flex flex-wrap items-center gap-2 rounded-lg border border-warning/30 bg-warning-soft px-4 py-3 text-sm text-warning">
+          <p className="flex flex-wrap items-center gap-2 rounded-sm border border-warning/30 bg-warning-soft px-4 py-3 text-sm text-warning">
             <AlertCircle aria-hidden className="size-4" />
             La mayoría de torneos exigen un Riot ID para inscribirse.
             <Link href="/dashboard/perfil" className="font-semibold underline underline-offset-2">
@@ -41,7 +41,7 @@ export default async function DashboardHome() {
           </p>
         )}
         {!user.emailVerified && isMailConfigured() && (
-          <p className="flex items-center gap-2 rounded-lg border border-upcoming/30 bg-upcoming-soft px-4 py-3 text-sm text-upcoming">
+          <p className="flex items-center gap-2 rounded-sm border border-upcoming/30 bg-upcoming-soft px-4 py-3 text-sm text-upcoming">
             <Mail aria-hidden className="size-4" /> Todavía no has confirmado tu correo.
           </p>
         )}

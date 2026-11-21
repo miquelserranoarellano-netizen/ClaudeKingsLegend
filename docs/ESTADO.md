@@ -1,12 +1,14 @@
 # Estado del proyecto
 
 Última actualización: 21 de noviembre de 2026 · Preparada para Cloudflare Workers + Supabase (base de datos
-creada). Auditoría completa en `docs/AUDITORIA.md`; despliegue en `docs/DESPLIEGUE-CLOUDFLARE.md`.
+creada) y con imagen nueva «gamer». Auditoría completa en `docs/AUDITORIA.md`; despliegue en
+`docs/DESPLIEGUE-CLOUDFLARE.md`.
 
 ## Qué hay
 
 | Área | Estado |
 | --- | --- |
+| Identidad visual (tema oscuro «noche azulada» con oro y cian, tipografías Spectral y Barlow Condensed, emblema y logotipo propios, botones y marcos dorados, cuadros y tablas con podio; tokens en `src/app/globals.css`) | Hecho |
 | Portada (cifras reales, abiertos, en curso, próximos, resultados, próximos partidos, ranking, cómo participar, noticias, estados vacíos) | Hecho |
 | Explorador `/torneos` (búsqueda, estado, formato, tipo, fechas, orden, paginación) | Hecho |
 | Detalle de torneo (información, participantes, calendario, cuadro o clasificación, reglas, premios, campeón, anuncios, inscripción según rol y fase) | Hecho |
@@ -54,6 +56,13 @@ creada). Auditoría completa en `docs/AUDITORIA.md`; despliegue en `docs/DESPLIE
 - Revisión en el navegador: portada, explorador, cuadros de eliminación simple y doble, clasificación de liga,
   partido (registrar resultado y ver el avance), panel y administración; 49 rutas sin errores; sin
   desbordamiento horizontal a 375 px en las páginas principales; menú móvil.
+- **Imagen nueva**: revisada en escritorio (1440 px) y móvil (375-390 px) en portada, explorador, cuadros,
+  liga, partido, equipo, jugador, noticias, legales, acceso, panel y administración, sin desbordamiento
+  horizontal. Contraste WCAG AA (≥ 4,5:1) de todos los colores de texto sobre todos los fondos; el más justo,
+  el gris secundario sobre las tarjetas claras, da 5,6:1. Pruebas e2e contra el Worker local (`workerd` +
+  PostgreSQL 16 a través del *binding* de Hyperdrive): 10 de 11; la de recuperar contraseña necesita modo
+  desarrollo o un servicio de correo, porque en producción sin correo la página lo dice en vez de mostrar el
+  formulario.
 
 ## Sin probar (dicho con claridad)
 
@@ -107,6 +116,9 @@ creada). Auditoría completa en `docs/AUDITORIA.md`; despliegue en `docs/DESPLIE
 12. **Sin *proxy* (middleware) de Next.js**: en Cloudflare rompía las peticiones con cookies. Cada página
     privada comprueba la sesión con su ruta exacta (lo vigila una prueba).
 13. **RLS sin políticas** en todas las tablas: la aplicación no usa la API REST de Supabase, así que se cierra.
+14. **Imagen inspirada en la web de League of Legends, pero propia**: paleta, emblema, logotipo y banners son
+    originales (SVG hechos a mano) y las tipografías son libres (Google Fonts). No se usa ningún logotipo,
+    arte, fuente ni recurso de Riot Games; solo el nombre del juego y el aviso legal del pie.
 
 ## Datos locales
 

@@ -4,16 +4,16 @@ import { cn } from "@/lib/cn";
 export type BadgeTone = "neutral" | "brand" | "open" | "upcoming" | "live" | "finished" | "warning" | "danger" | "trophy" | "night";
 
 const tones: Record<BadgeTone, string> = {
-  neutral: "bg-surface-2 text-ink-2",
-  brand: "bg-brand-soft text-brand-ink",
-  open: "bg-open-soft text-open",
-  upcoming: "bg-upcoming-soft text-upcoming",
-  live: "bg-live-soft text-live",
-  finished: "bg-finished-soft text-finished",
-  warning: "bg-warning-soft text-warning",
-  danger: "bg-danger-soft text-danger",
-  trophy: "bg-trophy-soft text-trophy",
-  night: "bg-night text-white",
+  neutral: "border-line-strong bg-surface-2 text-ink-2",
+  brand: "border-brand/45 bg-brand-soft text-brand-ink",
+  open: "border-open/40 bg-open-soft text-open",
+  upcoming: "border-upcoming/40 bg-upcoming-soft text-upcoming",
+  live: "border-live/45 bg-live-soft text-live",
+  finished: "border-finished/35 bg-finished-soft text-finished",
+  warning: "border-warning/40 bg-warning-soft text-warning",
+  danger: "border-danger/40 bg-danger-soft text-danger",
+  trophy: "border-trophy/45 bg-trophy-soft text-trophy",
+  night: "border-line-strong bg-night text-ink",
 };
 
 export function Badge({
@@ -31,7 +31,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold tracking-wide uppercase",
+        "inline-flex items-center gap-1.5 border px-2 py-0.5 font-display text-[0.72rem] leading-4 font-bold tracking-[0.12em] uppercase backdrop-blur-sm",
         tones[tone],
         className,
       )}

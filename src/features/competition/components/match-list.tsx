@@ -23,7 +23,7 @@ export function MatchList({ items, mode }: { items: MatchListItem[]; mode: "resu
         const aWon = m.winnerId !== null && m.winnerId === m.a?.participantId;
         const bWon = m.winnerId !== null && m.winnerId === m.b?.participantId;
         return (
-          <li key={m.id} className="relative px-4 py-3 hover:bg-surface-2/60">
+          <li key={m.id} className="relative px-4 py-3 transition-colors hover:bg-white/[0.03]">
             <div className="mb-1.5 flex items-center justify-between gap-2 text-xs text-ink-3">
               <Link
                 href={`/torneos/${m.tournament.slug}/partidos/${m.id}`}
@@ -52,12 +52,12 @@ export function MatchList({ items, mode }: { items: MatchListItem[]; mode: "resu
               <span className="shrink-0 font-display text-lg font-extrabold tabular">
                 {mode === "results" ? (
                   <>
-                    <span className={aWon ? "text-ink" : "text-ink-3"}>{m.scoreA ?? "–"}</span>
+                    <span className={aWon ? "text-brand-strong" : "text-ink-3"}>{m.scoreA ?? "–"}</span>
                     <span className="mx-1 text-ink-3">:</span>
-                    <span className={bWon ? "text-ink" : "text-ink-3"}>{m.scoreB ?? "–"}</span>
+                    <span className={bWon ? "text-brand-strong" : "text-ink-3"}>{m.scoreB ?? "–"}</span>
                   </>
                 ) : (
-                  <span className="text-sm text-ink-3">VS</span>
+                  <span className="font-display text-sm font-bold tracking-[0.2em] text-hex">VS</span>
                 )}
               </span>
               <Side side={m.b} won={bWon} align="right" />

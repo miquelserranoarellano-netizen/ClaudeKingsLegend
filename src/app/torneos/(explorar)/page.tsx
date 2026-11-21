@@ -81,8 +81,8 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
               href={query({ estado: c.value === "all" ? undefined : c.value, pagina: undefined })}
               aria-current={category === c.value ? "page" : undefined}
               className={cn(
-                "shrink-0 rounded-t-lg border border-b-0 px-4 py-2 text-sm font-semibold",
-                category === c.value ? "border-line bg-page text-ink" : "border-transparent text-ink-3 hover:text-ink",
+                "shrink-0 border-b-2 px-4 py-3 font-display text-[0.95rem] font-bold tracking-[0.12em] uppercase transition-colors",
+                category === c.value ? "border-brand text-brand-strong" : "border-transparent text-ink-3 hover:text-ink",
               )}
             >
               {c.label}
@@ -98,12 +98,12 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
             <span>Buscar por nombre</span>
             <span className="relative block">
               <Search aria-hidden className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-3" />
-              <input name="q" defaultValue={q} placeholder="Nombre del torneo" className="h-10 w-full rounded-lg border border-line-strong bg-surface pr-3 pl-9 text-sm font-normal" />
+              <input name="q" defaultValue={q} placeholder="Nombre del torneo" className="h-10 w-full rounded-sm border border-line-strong bg-surface pr-3 pl-9 text-sm font-normal" />
             </span>
           </label>
           <label className="space-y-1 text-sm font-semibold">
             <span>Formato</span>
-            <select name="formato" defaultValue={format ?? ""} className="h-10 w-full rounded-lg border border-line-strong bg-surface px-3 text-sm font-normal">
+            <select name="formato" defaultValue={format ?? ""} className="h-10 w-full rounded-sm border border-line-strong bg-surface px-3 text-sm font-normal">
               <option value="">Todos</option>
               {FORMATS.map((f) => (
                 <option key={f} value={f}>
@@ -114,7 +114,7 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
           </label>
           <label className="space-y-1 text-sm font-semibold">
             <span>Tipo</span>
-            <select name="tipo" defaultValue={participantType ?? ""} className="h-10 w-full rounded-lg border border-line-strong bg-surface px-3 text-sm font-normal">
+            <select name="tipo" defaultValue={participantType ?? ""} className="h-10 w-full rounded-sm border border-line-strong bg-surface px-3 text-sm font-normal">
               <option value="">Todos</option>
               <option value="team">{label("participantType", "team")}</option>
               <option value="solo">{label("participantType", "solo")}</option>
@@ -122,15 +122,15 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
           </label>
           <label className="space-y-1 text-sm font-semibold">
             <span>Empieza desde</span>
-            <input type="date" name="desde" defaultValue={params.desde} className="h-10 w-full rounded-lg border border-line-strong bg-surface px-3 text-sm font-normal" />
+            <input type="date" name="desde" defaultValue={params.desde} className="h-10 w-full rounded-sm border border-line-strong bg-surface px-3 text-sm font-normal" />
           </label>
           <label className="space-y-1 text-sm font-semibold">
             <span>Hasta</span>
-            <input type="date" name="hasta" defaultValue={params.hasta} className="h-10 w-full rounded-lg border border-line-strong bg-surface px-3 text-sm font-normal" />
+            <input type="date" name="hasta" defaultValue={params.hasta} className="h-10 w-full rounded-sm border border-line-strong bg-surface px-3 text-sm font-normal" />
           </label>
           <label className="space-y-1 text-sm font-semibold">
             <span>Ordenar por</span>
-            <select name="orden" defaultValue={sort} className="h-10 w-full rounded-lg border border-line-strong bg-surface px-3 text-sm font-normal">
+            <select name="orden" defaultValue={sort} className="h-10 w-full rounded-sm border border-line-strong bg-surface px-3 text-sm font-normal">
               {SORTS.map((s) => (
                 <option key={s.value} value={s.value}>
                   {s.label}

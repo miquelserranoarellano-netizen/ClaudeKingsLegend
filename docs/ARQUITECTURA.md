@@ -5,7 +5,7 @@
 | Pieza | Elección | Por qué |
 | --- | --- | --- |
 | Aplicación | **Next.js 16** (App Router, Server Components, acciones de servidor) + React 19 + TypeScript estricto | Frontend y backend en un solo despliegue; todo el acceso a datos ocurre en el servidor. |
-| Estilos | **Tailwind CSS 4** + componentes propios accesibles (`src/components/ui`) | Al estilo de shadcn/ui pero sin dependencias extra: controles nativos (`<dialog>`, `<select>`, radios) que ya son accesibles con teclado. |
+| Estilos | **Tailwind CSS 4** + componentes propios accesibles (`src/components/ui`); tema y tokens (colores, tipografías, botones, marcos) en `src/app/globals.css` | Al estilo de shadcn/ui pero sin dependencias extra: controles nativos (`<dialog>`, `<select>`, radios) que ya son accesibles con teclado. |
 | Base de datos | **PostgreSQL** (Supabase en producción) con **Drizzle ORM** (un solo ORM) | Esquema tipado, migraciones SQL reproducibles (`drizzle/`). |
 | Base local | **PGlite** (Postgres compilado a WASM) | En desarrollo y en las pruebas no hay que instalar nada: el mismo SQL y las mismas migraciones que en producción. |
 | Autenticación | **Better Auth** (sucesor mantenido de Auth.js) | Hash scrypt, sesiones en base de datos, cookies HttpOnly, CSRF, verificación de correo y recuperación de contraseña. |

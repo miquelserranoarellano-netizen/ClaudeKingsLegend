@@ -44,14 +44,15 @@ export async function SiteFooter() {
   ];
 
   return (
-    <footer className="mt-20 border-t border-line bg-surface">
+    <footer className="relative mt-24 bg-night">
+      <div aria-hidden className="gold-rule" />
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:px-6 md:grid-cols-[1.4fr_repeat(3,1fr)]">
         <div className="space-y-4">
           <Logo />
           <p className="max-w-xs text-sm text-ink-3">{t("common.tagline")}: inscripciones, cuadros, calendarios y clasificaciones en un solo sitio.</p>
           {settings.contactEmail && (
             <p className="text-sm">
-              <a className="font-semibold text-ink underline-offset-4 hover:underline" href={`mailto:${settings.contactEmail}`}>
+              <a className="font-semibold text-hex underline-offset-4 hover:underline" href={`mailto:${settings.contactEmail}`}>
                 {settings.contactEmail}
               </a>
             </p>
@@ -64,7 +65,7 @@ export async function SiteFooter() {
                     href={url!}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex h-8 items-center rounded-md border border-line px-2.5 text-xs font-semibold text-ink-2 hover:border-ink-3 hover:text-ink"
+                    className="inline-flex h-8 items-center border border-line-strong px-2.5 font-display text-xs font-bold tracking-[0.1em] text-ink-2 uppercase hover:border-brand hover:text-brand-strong"
                   >
                     {SOCIAL_LABELS[network]}
                   </a>
@@ -75,11 +76,11 @@ export async function SiteFooter() {
         </div>
         {columns.map((column) => (
           <div key={column.title}>
-            <h2 className="font-display text-sm font-bold tracking-wider text-ink uppercase">{column.title}</h2>
+            <h2 className="font-display text-sm font-bold tracking-[0.2em] text-brand uppercase">{column.title}</h2>
             <ul className="mt-3 space-y-2">
               {column.links.map((link) => (
                 <li key={link.href}>
-                  <Link href={link.href} className="text-sm text-ink-3 hover:text-ink">
+                  <Link href={link.href} className="text-sm text-ink-3 transition-colors hover:text-brand-strong">
                     {link.label}
                   </Link>
                 </li>

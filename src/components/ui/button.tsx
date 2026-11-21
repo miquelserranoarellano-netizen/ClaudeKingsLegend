@@ -2,29 +2,34 @@ import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
-export type ButtonVariant = "primary" | "secondary" | "outline" | "ghost" | "danger" | "night";
+/**
+ * Botones de la marca (estilos en `globals.css`, sección «Botones»):
+ * - `primary`: oro forjado con doble marco, la acción principal de cada pantalla.
+ * - `hex`: cian «hextech», para la llamada de la cabecera.
+ * - `outline`, `secondary`, `night`, `ghost`: acciones secundarias.
+ * - `danger`: acciones destructivas.
+ */
+export type ButtonVariant = "primary" | "hex" | "secondary" | "outline" | "ghost" | "danger" | "night";
 export type ButtonSize = "sm" | "md" | "lg";
 
-const base =
-  "inline-flex items-center justify-center gap-2 font-semibold whitespace-nowrap transition-colors duration-150 disabled:pointer-events-none disabled:opacity-55 select-none";
-
 const variants: Record<ButtonVariant, string> = {
-  primary: "bg-brand text-white hover:bg-brand-strong chamfer-sm",
-  night: "bg-night text-white hover:bg-night-2 chamfer-sm",
-  secondary: "bg-surface-2 text-ink hover:bg-surface-3",
-  outline: "border border-line-strong bg-surface text-ink hover:border-ink-3 hover:bg-surface-2",
-  ghost: "text-ink-2 hover:bg-surface-2 hover:text-ink",
-  danger: "bg-danger text-white hover:bg-[#912018]",
+  primary: "btn-gold",
+  hex: "btn-hex",
+  night: "btn-night",
+  secondary: "btn-secondary",
+  outline: "btn-outline",
+  ghost: "btn-ghost",
+  danger: "btn-danger",
 };
 
 const sizes: Record<ButtonSize, string> = {
-  sm: "h-8 px-3 text-sm rounded-md",
-  md: "h-10 px-4 text-sm rounded-lg",
-  lg: "h-12 px-6 text-base rounded-lg",
+  sm: "h-8 px-3 text-[0.8rem]",
+  md: "h-10 px-5 text-sm",
+  lg: "h-12 px-7 text-base",
 };
 
 export function buttonClasses(variant: ButtonVariant = "primary", size: ButtonSize = "md", className?: string) {
-  return cn(base, variants[variant], sizes[size], className);
+  return cn("btn", variants[variant], sizes[size], className);
 }
 
 export function Button({

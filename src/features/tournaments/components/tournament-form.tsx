@@ -83,7 +83,7 @@ export function TournamentForm({ tournament }: { tournament?: TournamentFormValu
         </>
       )}
       {locked && (
-        <p className="rounded-lg bg-warning-soft px-4 py-3 text-sm text-warning">
+        <p className="rounded-sm bg-warning-soft px-4 py-3 text-sm text-warning">
           La competición ha empezado: el formato, las plazas y las reglas de las series ya no se pueden cambiar. Puedes
           corregir textos, fechas informativas y premios.
         </p>
@@ -227,7 +227,7 @@ export function TournamentForm({ tournament }: { tournament?: TournamentFormValu
               <legend className="mb-2 text-sm font-semibold">Desempates, en orden de aplicación</legend>
               <div className="grid gap-2 sm:grid-cols-4">
                 {[0, 1, 2, 3].map((i) => (
-                  <select key={i} name="tiebreakers[]" defaultValue={tiebreakers[i] ?? ""} aria-label={`Desempate ${i + 1}`} className="h-10 rounded-lg border border-line-strong bg-surface px-3 text-sm">
+                  <select key={i} name="tiebreakers[]" defaultValue={tiebreakers[i] ?? ""} aria-label={`Desempate ${i + 1}`} className="h-10 rounded-sm border border-line-strong bg-surface px-3 text-sm">
                     <option value="">—</option>
                     {TIEBREAKERS.map((tb) => (
                       <option key={tb} value={tb}>{i + 1}. {label("tiebreaker", tb)}</option>

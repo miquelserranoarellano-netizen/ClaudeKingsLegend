@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Barlow, Barlow_Condensed } from "next/font/google";
+import { Barlow, Barlow_Condensed, Spectral } from "next/font/google";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { getSettings } from "@/features/settings/service";
@@ -14,6 +14,8 @@ const display = Barlow_Condensed({
   variable: "--font-display-face",
   display: "swap",
 });
+/** Serif épica de los títulos grandes (solo cursiva: es como se usa). */
+const epic = Spectral({ subsets: ["latin"], weight: ["700", "800"], style: ["italic"], variable: "--font-epic-face", display: "swap" });
 
 /**
  * Todo se renderiza en cada petición: las páginas dependen de la sesión y de datos que cambian a cada
@@ -37,7 +39,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#ffffff",
+  themeColor: "#010a13",
   width: "device-width",
   initialScale: 1,
 };
@@ -45,17 +47,17 @@ export const viewport: Viewport = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const settings = await getSettings();
   return (
-    <html lang={localeTags[getLocale()]} className={`${body.variable} ${display.variable}`}>
+    <html lang={localeTags[getLocale()]} className={`${body.variable} ${display.variable} ${epic.variable}`}>
       <body className="flex min-h-dvh flex-col antialiased">
         <a
           href="#contenido"
-          className="sr-only z-50 rounded-lg bg-night px-4 py-2 font-semibold text-white focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
+          className="sr-only z-50 bg-brand px-4 py-2 font-semibold text-night focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
         >
           Saltar al contenido
         </a>
         <SiteHeader />
         {settings.announcementBanner && (
-          <div className="border-b border-line bg-night text-center text-sm text-white">
+          <div className="border-b border-brand/30 bg-brand-soft text-center text-sm font-medium text-brand-ink">
             <p className="mx-auto max-w-7xl px-4 py-2">{settings.announcementBanner}</p>
           </div>
         )}

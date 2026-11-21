@@ -44,14 +44,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div>
-      <div className="border-b border-line bg-night text-white">
+      <div className="bg-night text-white">
         <Container className="flex flex-wrap items-center justify-between gap-2 py-3">
-          <p className="font-display text-lg font-bold tracking-wide uppercase">Administración</p>
+          <p className="font-display text-lg font-bold tracking-[0.16em] text-brand uppercase">Administración</p>
           <Badge tone="brand">{label("role", user.role)}</Badge>
         </Container>
+        <div aria-hidden className="gold-rule opacity-60" />
       </div>
       <Container className="grid gap-8 py-8 lg:grid-cols-[210px_minmax(0,1fr)]">
-        <nav aria-label="Secciones de administración" className="rounded-card border border-line bg-surface p-1.5 lg:sticky lg:top-24 lg:self-start">
+        <nav aria-label="Secciones de administración" className="rounded-card border border-line bg-surface/90 p-1.5 shadow-card lg:sticky lg:top-24 lg:self-start">
           <NavLinks items={items} vertical />
         </nav>
         <div className="min-w-0">{children}</div>

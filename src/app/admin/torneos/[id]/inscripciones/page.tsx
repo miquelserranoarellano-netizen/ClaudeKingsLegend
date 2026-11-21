@@ -83,7 +83,7 @@ export default async function RegistrationsAdminPage({ params }: { params: Promi
                           ))}
                         </ul>
                       )}
-                      {reg.note && <p className="mt-3 rounded-lg bg-surface-2 px-3 py-2 text-sm">«{reg.note}»</p>}
+                      {reg.note && <p className="mt-3 rounded-sm bg-surface-2 px-3 py-2 text-sm">«{reg.note}»</p>}
                       {reg.decisionReason && <p className="mt-2 text-xs text-ink-3">Motivo: {reg.decisionReason}</p>}
                       {editable && ["pending", "waitlisted", "approved"].includes(reg.status) && (
                         <div className="mt-4 border-t border-line pt-3">

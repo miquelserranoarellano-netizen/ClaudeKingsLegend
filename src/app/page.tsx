@@ -1,6 +1,7 @@
 import { CalendarClock, ClipboardCheck, Crown, Megaphone, Swords, Trophy, UserPlus, Users } from "lucide-react";
 import Link from "next/link";
-import { CrownMark } from "@/components/brand/logo";
+import { RuneEmblem } from "@/components/brand/rune-emblem";
+import { podiumClass } from "@/components/ui/podium";
 import { Container, SectionHeading } from "@/components/layout/section";
 import { TeamLogo } from "@/components/ui/avatar";
 import { ButtonLink } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import { MatchList } from "@/features/competition/components/match-list";
 import { latestResults, platformStats, teamRanking, upcomingMatches } from "@/features/competition/queries";
 import { TournamentCard } from "@/features/tournaments/components/tournament-card";
 import { featuredTournaments } from "@/features/tournaments/queries";
+import { cn } from "@/lib/cn";
 import { formatDate, formatNumber } from "@/lib/format";
 import { getCurrentUser } from "@/server/auth/session";
 
@@ -42,24 +44,33 @@ export default async function HomePage() {
 
   return (
     <>
-      {/* Hero */}
-      <section className="hatch relative overflow-hidden border-b border-line bg-surface">
-        <Container className="grid items-center gap-10 py-14 md:grid-cols-[1.25fr_1fr] md:py-20">
-          <div>
-            <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1 text-xs font-bold tracking-[0.16em] text-ink-2 uppercase">
-              <span className="size-1.5 rounded-full bg-brand" aria-hidden />
+      {/* Hero: portada «de videojuego» con el emblema rúnico y el marcador de la plataforma. */}
+      <section className="relative isolate overflow-hidden bg-night">
+        <div aria-hidden className="hatch absolute inset-0 -z-10 [mask-image:radial-gradient(ellipse_70%_80%_at_70%_40%,black,transparent)]" />
+        <div
+          aria-hidden
+          className="absolute inset-0 -z-10 bg-[radial-gradient(46rem_30rem_at_74%_38%,rgb(10_200_185/0.16),transparent_70%),radial-gradient(40rem_24rem_at_8%_100%,rgb(200_170_110/0.13),transparent_70%)]"
+        />
+        <div aria-hidden className="absolute -top-1/3 left-[58%] -z-10 h-[170%] w-28 rotate-[24deg] bg-linear-to-b from-transparent via-brand/12 to-transparent blur-2xl" />
+        <div aria-hidden className="absolute -top-1/3 left-[70%] -z-10 h-[170%] w-10 rotate-[24deg] bg-linear-to-b from-transparent via-hex/10 to-transparent blur-xl" />
+
+        <Container className="relative grid items-center gap-10 pt-12 pb-10 md:grid-cols-[1.2fr_1fr] md:pt-16">
+          <div className="relative z-10">
+            <p className="eyebrow inline-flex items-center gap-2.5">
+              <span aria-hidden className="size-1.5 rotate-45 bg-hex shadow-[0_0_8px_rgb(10_200_185/0.9)]" />
               League of Legends · Competición amateur
             </p>
-            <h1 className="display text-5xl text-ink uppercase sm:text-6xl lg:text-7xl">
+            <h1 className="display mt-4 text-5xl text-ink uppercase drop-shadow-[0_4px_24px_rgb(0_0_0/0.6)] sm:text-6xl lg:text-7xl">
               Compite. Gana.
               <br />
-              <span className="text-brand">Hazte leyenda.</span>
+              <span className="text-gold">Hazte leyenda.</span>
             </h1>
+            <span aria-hidden className="ornament mt-6" />
             <p className="mt-5 max-w-xl text-lg text-ink-2">
               Torneos y ligas con inscripción de equipos, cuadros que avanzan solos, calendario de partidos y
               clasificaciones calculadas al momento.
             </p>
-            <div className="mt-7 flex flex-wrap gap-3">
+            <div className="mt-8 flex flex-wrap gap-4">
               <ButtonLink href="/torneos" size="lg">
                 Ver torneos
               </ButtonLink>
@@ -81,36 +92,45 @@ export default async function HomePage() {
             </div>
           </div>
 
-          <div className="relative">
-            <div className="chamfer relative overflow-hidden rounded-card bg-night p-6 text-white shadow-lift sm:p-8">
-              <CrownMark className="absolute -right-8 -bottom-6 size-56 text-white opacity-[0.06]" />
-              <p className="text-xs font-bold tracking-[0.18em] text-white/60 uppercase">La plataforma, en cifras</p>
-              <dl className="relative mt-5 grid grid-cols-2 gap-x-6 gap-y-6">
-                {[
-                  { label: "Torneos y ligas", value: stats.tournaments },
-                  { label: "Inscripciones abiertas", value: stats.open },
-                  { label: "Equipos activos", value: stats.teams },
-                  { label: "Partidos jugados", value: stats.matches },
-                ].map((s) => (
-                  <div key={s.label}>
-                    <dt className="text-sm text-white/65">{s.label}</dt>
-                    <dd className="display mt-1 text-5xl tabular">{formatNumber(s.value)}</dd>
-                  </div>
-                ))}
-              </dl>
-              {nothingYet && (
-                <p className="relative mt-6 border-t border-white/15 pt-4 text-sm text-white/75">
-                  Todavía no se ha publicado ningún torneo. El primero puede ser el tuyo.
-                </p>
-              )}
-            </div>
+          {/* En móvil queda de fondo, tras el título, para que los botones se vean sin desplazarse. */}
+          <div className="pointer-events-none absolute -top-8 -right-28 w-72 opacity-25 sm:-right-20 sm:w-80 md:relative md:top-auto md:right-auto md:mx-auto md:w-full md:max-w-[29rem] md:opacity-100">
+            <RuneEmblem />
           </div>
         </Container>
+
+        {/* Marcador de la plataforma */}
+        <Container className="relative pb-12 md:pb-16">
+          <dl className="frame-gold grid grid-cols-2 bg-night-2/70 backdrop-blur-sm md:grid-cols-4">
+            {[
+              { label: "Torneos y ligas", value: stats.tournaments },
+              { label: "Inscripciones abiertas", value: stats.open },
+              { label: "Equipos activos", value: stats.teams },
+              { label: "Partidos jugados", value: stats.matches },
+            ].map((s, index) => (
+              <div
+                key={s.label}
+                className={cn(
+                  "flex flex-col-reverse items-center gap-1 px-4 py-5 text-center",
+                  index % 2 === 1 && "border-l border-brand/20",
+                  index >= 2 && "border-t border-brand/20 md:border-t-0",
+                  index === 2 && "md:border-l",
+                )}
+              >
+                <dt className="font-display text-xs font-bold tracking-[0.2em] text-ink-3 uppercase">{s.label}</dt>
+                <dd className="display text-gold text-5xl tabular sm:text-6xl">{formatNumber(s.value)}</dd>
+              </div>
+            ))}
+          </dl>
+          {nothingYet && (
+            <p className="mt-4 text-center text-sm text-ink-3">Todavía no se ha publicado ningún torneo. El primero puede ser el tuyo.</p>
+          )}
+        </Container>
+        <div aria-hidden className="gold-rule" />
       </section>
 
       {hasDemo && (
         <Container className="pt-6">
-          <p className="flex items-center gap-2 rounded-lg border border-warning/30 bg-warning-soft px-4 py-2.5 text-sm text-warning">
+          <p className="flex items-center gap-2 rounded-sm border border-warning/30 bg-warning-soft px-4 py-2.5 text-sm text-warning">
             <DemoBadge /> Parte de lo que ves son datos de demostración generados para desarrollo: no son resultados reales.
           </p>
         </Container>
@@ -180,8 +200,8 @@ export default async function HomePage() {
             {ranking.length > 0 ? (
               <ol className="divide-y divide-line">
                 {ranking.map((team, index) => (
-                  <li key={team.teamId} className="flex items-center gap-3 px-4 py-3">
-                    <span className="w-6 text-center font-display text-xl font-extrabold text-ink-3 tabular">{index + 1}</span>
+                  <li key={team.teamId} className={cn("flex items-center gap-3 px-4 py-3", index === 0 && "bg-[linear-gradient(90deg,rgb(200_170_110/0.12),transparent_60%)]")}>
+                    <span className={cn("w-6 text-center font-display text-xl font-extrabold tabular", podiumClass(index + 1))}>{index + 1}</span>
                     <TeamLogo name={team.name} tag={team.tag} mediaId={team.logoMediaId} size="sm" />
                     <Link href={`/equipos/${team.slug}`} className="min-w-0 flex-1 truncate font-semibold hover:text-brand">
                       {team.name}
@@ -232,17 +252,24 @@ export default async function HomePage() {
         </section>
       </Container>
 
-      <section className="mt-20 border-y border-line bg-surface" aria-labelledby="how-title">
-        <Container className="py-14">
+      <section className="relative mt-24 overflow-hidden bg-night/70" aria-labelledby="how-title">
+        <div aria-hidden className="gold-rule" />
+        <div aria-hidden className="hatch absolute inset-0 -z-10 opacity-70" />
+        <Container className="py-16">
           <SectionHeading id="how-title" eyebrow="Cómo participar" title="De cero a la final en cuatro pasos" />
           <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {STEPS.map((step, index) => (
-              <li key={step.title} className="relative rounded-card border border-line bg-page p-5">
-                <span className="absolute top-4 right-4 font-display text-4xl font-extrabold text-surface-3 tabular" aria-hidden>
+              <li
+                key={step.title}
+                className="group relative rounded-card border border-line bg-surface/80 p-6 transition-[border-color,box-shadow] duration-200 hover:border-brand/50 hover:shadow-lift"
+              >
+                <span className="text-gold absolute top-4 right-5 font-display text-5xl font-extrabold opacity-35 tabular" aria-hidden>
                   {index + 1}
                 </span>
-                <step.icon aria-hidden className="size-7 text-brand" />
-                <h3 className="mt-4 font-display text-xl font-bold uppercase">{step.title}</h3>
+                <span className="flex size-12 rotate-45 items-center justify-center border border-brand/60 bg-night shadow-[0_0_22px_-6px_rgb(200_170_110/0.7)] transition-colors group-hover:border-brand-strong">
+                  <step.icon aria-hidden className="size-5 -rotate-45 text-brand-strong" />
+                </span>
+                <h3 className="mt-6 font-display text-xl font-bold tracking-[0.06em] uppercase">{step.title}</h3>
                 <p className="mt-1 text-sm text-ink-3">{step.text}</p>
               </li>
             ))}

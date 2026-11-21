@@ -83,7 +83,7 @@ export default async function TournamentPage({ params, searchParams }: { params:
 
   return (
     <>
-      <section className="relative overflow-hidden border-b border-line bg-night text-white">
+      <section className="relative overflow-hidden bg-night text-white">
         <div className="absolute inset-0 opacity-90">
           <TournamentBanner seed={t.slug} mediaId={t.bannerMediaId} priority />
         </div>
@@ -97,12 +97,13 @@ export default async function TournamentPage({ params, searchParams }: { params:
               {label("format", t.format)} · {label("participantType", t.participantType)}
             </span>
           </div>
-          <h1 className="display mt-3 max-w-4xl text-4xl uppercase sm:text-6xl">{t.name}</h1>
+          <h1 className="display mt-3 max-w-4xl text-4xl uppercase drop-shadow-[0_4px_24px_rgb(0_0_0/0.7)] sm:text-6xl">{t.name}</h1>
+          <span aria-hidden className="ornament mt-4" />
           {t.summary && <p className="mt-3 max-w-2xl text-white/80">{t.summary}</p>}
           <p className="mt-4 text-sm text-white/70">
             Organiza{" "}
             {detail.organizer.handle ? (
-              <Link href={`/jugadores/${detail.organizer.handle}`} className="font-semibold text-white underline-offset-4 hover:underline">
+              <Link href={`/jugadores/${detail.organizer.handle}`} className="font-semibold text-brand-strong underline-offset-4 hover:underline">
                 {detail.organizer.name}
               </Link>
             ) : (
@@ -110,9 +111,10 @@ export default async function TournamentPage({ params, searchParams }: { params:
             )}
           </p>
         </Container>
+        <div aria-hidden className="gold-rule relative" />
       </section>
 
-      <div className="border-b border-line bg-surface">
+      <div className="border-b border-line bg-night/80 backdrop-blur-sm">
         <Container>
           <nav aria-label="Secciones del torneo" className="-mb-px flex gap-1 overflow-x-auto">
             {TABS.map((value) => (
@@ -121,8 +123,8 @@ export default async function TournamentPage({ params, searchParams }: { params:
                 href={tabHref(value)}
                 aria-current={tab === value ? "page" : undefined}
                 className={cn(
-                  "shrink-0 border-b-2 px-4 py-3.5 text-sm font-semibold",
-                  tab === value ? "border-brand text-ink" : "border-transparent text-ink-3 hover:text-ink",
+                  "shrink-0 border-b-2 px-4 py-3.5 font-display text-[0.95rem] font-bold tracking-[0.12em] uppercase transition-colors",
+                  tab === value ? "border-brand text-brand-strong" : "border-transparent text-ink-3 hover:text-ink",
                 )}
               >
                 {value === "resumen" ? "Resumen" : value === "participantes" ? `Participantes (${participants.length})` : value === "partidos" ? "Partidos" : value === "cuadro" ? competitionTab : "Reglas"}
@@ -136,11 +138,13 @@ export default async function TournamentPage({ params, searchParams }: { params:
       <Container className={cn("grid gap-8 py-8", tab !== "cuadro" && "lg:grid-cols-[minmax(0,1fr)_22rem]")}>
         <div className="min-w-0 space-y-6">
           {champion && (
-            <div className="chamfer flex items-center gap-4 rounded-card border border-trophy/30 bg-trophy-soft p-5">
-              <Crown aria-hidden className="size-10 shrink-0 text-trophy" />
+            <div className="frame-gold flex items-center gap-5 rounded-card bg-[radial-gradient(30rem_12rem_at_0%_50%,rgb(232_199_122/0.18),transparent_70%)] bg-night-2 p-5">
+              <span className="flex size-14 shrink-0 rotate-45 items-center justify-center border border-trophy/70 bg-night shadow-[0_0_26px_-4px_rgb(232_199_122/0.7)]">
+                <Crown aria-hidden className="size-7 -rotate-45 text-trophy" />
+              </span>
               <div>
-                <p className="text-xs font-bold tracking-[0.18em] text-trophy uppercase">Campeón</p>
-                <p className="display text-3xl uppercase">
+                <p className="eyebrow text-trophy">Campeón</p>
+                <p className="display text-gold text-3xl uppercase">
                   {champion.href ? <Link href={champion.href} className="hover:text-brand">{champion.name}</Link> : champion.name}
                 </p>
               </div>

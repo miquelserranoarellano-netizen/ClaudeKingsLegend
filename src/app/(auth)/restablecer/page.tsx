@@ -13,7 +13,7 @@ export default async function ResetPasswordPage({ searchParams }: { searchParams
         <ResetPasswordForm token={token} />
       ) : (
         <div className="space-y-4">
-          <p className="rounded-lg bg-danger-soft px-4 py-3 text-sm text-danger">El enlace no es válido o ha caducado.</p>
+          <p className="rounded-sm bg-danger-soft px-4 py-3 text-sm text-danger">El enlace no es válido o ha caducado.</p>
           <Link href="/recuperar" className="font-semibold text-brand underline-offset-4 hover:underline">
             Pedir un enlace nuevo
           </Link>

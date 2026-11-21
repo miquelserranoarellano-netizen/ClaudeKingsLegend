@@ -58,16 +58,16 @@ function SlotRow({
     <div
       className={cn(
         "flex items-center gap-2 px-2.5",
-        winner ? "bg-surface font-bold text-ink" : decided ? "text-ink-3" : "text-ink-2",
+        winner ? "bg-[linear-gradient(90deg,rgb(200_170_110/0.18),transparent)] font-bold text-ink" : decided ? "text-ink-3" : "text-ink-2",
       )}
       style={{ height: ROW_H }}
     >
-      <span className={cn("h-4 w-0.5 rounded-full", winner ? "bg-brand" : "bg-transparent")} aria-hidden />
+      <span className={cn("h-4 w-0.5", winner ? "bg-brand shadow-[0_0_8px_rgb(200_170_110/0.9)]" : "bg-transparent")} aria-hidden />
       <span className="w-5 shrink-0 text-right text-[11px] text-ink-3 tabular">{participant?.seed ?? ""}</span>
       <span className="min-w-0 flex-1 truncate text-sm">
         {participant ? participant.name : dead ? <span className="text-ink-3 italic">BYE</span> : <span className="text-ink-3">Por decidir</span>}
       </span>
-      <span className="w-5 shrink-0 text-right font-display text-base tabular">{score ?? ""}</span>
+      <span className={cn("w-5 shrink-0 text-right font-display text-base tabular", winner && "text-brand-strong")}>{score ?? ""}</span>
     </div>
   );
 }
@@ -84,13 +84,13 @@ function MatchBox({ match, slug }: { match: MatchView; slug: string }) {
       <SlotRow participant={match.b} dead={match.bDead} score={match.isBye ? null : match.scoreB} winner={bWin} decided={decided} />
       {live && (
         <span
-          className={cn("absolute -top-1.5 -right-1.5 size-3 rounded-full ring-2 ring-surface", match.status === "disputed" ? "bg-danger" : match.status === "in_progress" ? "animate-pulse-dot bg-live" : "bg-warning")}
+          className={cn("absolute top-1 right-1 size-2 rounded-full ring-2 ring-night", match.status === "disputed" ? "bg-danger" : match.status === "in_progress" ? "animate-pulse-dot bg-live" : "bg-warning")}
           aria-hidden
         />
       )}
     </>
   );
-  const box = "relative block overflow-hidden rounded-lg border bg-surface-2/60 shadow-card";
+  const box = "relative block overflow-hidden rounded-sm border bg-night-2/90 shadow-card";
   if (match.status === "void") {
     return (
       <div className={cn(box, "border-dashed border-line opacity-50")} aria-label="Partido que no se disputa">
@@ -100,7 +100,11 @@ function MatchBox({ match, slug }: { match: MatchView; slug: string }) {
   }
   const names = `${match.a?.name ?? "Por decidir"} contra ${match.b?.name ?? (match.bDead ? "BYE" : "Por decidir")}`;
   return (
-    <Link href={`/torneos/${slug}/partidos/${match.id}`} className={cn(box, "border-line transition-colors hover:border-ink-3")} aria-label={names}>
+    <Link
+      href={`/torneos/${slug}/partidos/${match.id}`}
+      className={cn(box, "border-line-strong transition-[border-color,box-shadow] hover:border-brand/70 hover:shadow-[0_0_18px_-4px_rgb(200_170_110/0.5)]", live && "border-live/50")}
+      aria-label={names}
+    >
       {content}
     </Link>
   );
@@ -122,18 +126,18 @@ function BracketSection({ title, rounds, slug }: { title?: string; rounds: Round
     });
   return (
     <section className="space-y-3">
-      {title && <h3 className="font-display text-lg font-bold tracking-wide text-ink-2 uppercase">{title}</h3>}
+      {title && <h3 className="font-display text-lg font-bold tracking-[0.16em] text-brand uppercase">{title}</h3>}
       <div className="overflow-x-auto pb-3" tabIndex={0} aria-label={title ? `${title} (desplazable)` : "Cuadro (desplazable)"}>
         <div className="relative" style={{ width, height }}>
           <svg className="pointer-events-none absolute inset-0" width={width} height={height} aria-hidden>
             {lines.map((l) => (
-              <path key={l.key} d={l.d} fill="none" stroke="var(--color-line-strong)" strokeWidth="1.5" />
+              <path key={l.key} d={l.d} fill="none" stroke="rgb(200 170 110 / 0.35)" strokeWidth="1.5" />
             ))}
           </svg>
           {rounds.map((round, col) => (
             <p
               key={round.id}
-              className="absolute top-0 truncate text-xs font-bold tracking-wider text-ink-3 uppercase"
+              className="absolute top-0 truncate font-display text-xs font-bold tracking-[0.16em] text-hex uppercase"
               style={{ left: col * (BOX_W + COL_GAP), width: BOX_W }}
             >
               {roundLabel(round.name)} <span className="font-medium normal-case">· Bo{round.bestOf}</span>
