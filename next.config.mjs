@@ -9,16 +9,17 @@ const isProd = process.env.NODE_ENV === "production";
 const forCloudflare = process.env.KL_DEPLOY_TARGET === "cloudflare";
 
 /**
- * Política de seguridad de contenidos. Solo recursos del propio dominio; sin marcos de terceros ni
- * objetos. `unsafe-inline` en scripts es necesario para los scripts que inyecta Next sin nonces (ver
- * docs/ARQUITECTURA.md, «Seguridad»: pasar a nonces es una mejora pendiente). En desarrollo no se aplica
- * (recarga en caliente).
+ * Política de seguridad de contenidos. Solo recursos del propio dominio (y, en imágenes, el arte de Data Dragon
+ * de la portada); sin marcos de terceros ni objetos. `unsafe-inline` en scripts es necesario para los scripts
+ * que inyecta Next sin nonces (ver docs/ARQUITECTURA.md, «Seguridad»: pasar a nonces es una mejora
+ * pendiente). En desarrollo no se aplica (recarga en caliente).
  */
 const csp = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob:",
+  // Data Dragon: el CDN público de Riot con el arte de League of Legends de la portada (src/components/landing/lol-art.ts).
+  "img-src 'self' data: blob: https://ddragon.leagueoflegends.com",
   "font-src 'self'",
   "connect-src 'self'",
   "frame-ancestors 'none'",

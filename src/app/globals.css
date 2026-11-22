@@ -65,11 +65,16 @@
   --shadow-lift:
     0 0 0 1px rgb(200 170 110 / 0.45), 0 22px 44px -22px rgb(0 0 0 / 0.95), 0 0 28px -8px rgb(200 170 110 / 0.35);
 
+  /* Curvas con más intención que las de serie (Emil Kowalski): ease-out para lo que entra o responde,
+     ease-in-out para lo que se mueve por la pantalla. Nunca ease-in en la interfaz. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+
   --animate-pulse-dot: pulse-dot 1.6s ease-in-out infinite;
-  --animate-fade-in: fade-in 0.18s ease-out;
-  --animate-spin-slow: spin-cw 90s linear infinite;
-  --animate-spin-slower: spin-reverse 140s linear infinite;
-  --animate-glow: glow 4.5s ease-in-out infinite;
+  --animate-fade-in: fade-in 0.18s var(--ease-out);
+  /* Entrada de la portada: una sola vez al cargar, nunca al hacer scroll. */
+  --animate-enter: enter 700ms var(--ease-out) both;
+  --animate-art: art-in 1600ms var(--ease-out) both;
 
   @keyframes pulse-dot {
     0%,
@@ -92,23 +97,17 @@
       transform: none;
     }
   }
-  @keyframes spin-cw {
-    to {
-      transform: rotate(360deg);
+  @keyframes enter {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
     }
   }
-  @keyframes spin-reverse {
-    to {
-      transform: rotate(-360deg);
-    }
-  }
-  @keyframes glow {
-    0%,
-    100% {
-      opacity: 0.55;
-    }
-    50% {
-      opacity: 1;
+  /* El arte no aparece de la nada: parte de casi su tamaño y se asienta despacio. */
+  @keyframes art-in {
+    from {
+      opacity: 0;
+      transform: scale(1.06);
     }
   }
 }
@@ -159,6 +158,15 @@
     font-weight: 800;
     letter-spacing: 0.005em;
     line-height: 1.04;
+  }
+  /* Titulares de la portada: condensada, recta y muy gruesa, al estilo de los gráficos de los eSports. */
+  .headline {
+    font-family: var(--font-display);
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.005em;
+    line-height: 0.94;
+    text-wrap: balance;
   }
   /* Cifras grandes (marcadores, contadores): condensada, recta y con números tabulares. */
   .display.tabular {
@@ -291,7 +299,12 @@
       background-color 150ms,
       border-color 150ms,
       box-shadow 200ms,
-      filter 150ms;
+      filter 150ms,
+      transform 160ms var(--ease-out);
+  }
+  /* Al pulsar, el botón cede un poco: confirma que la interfaz ha recibido el toque. */
+  .btn:active {
+    transform: scale(0.97);
   }
   .btn:disabled,
   .btn[aria-disabled="true"] {

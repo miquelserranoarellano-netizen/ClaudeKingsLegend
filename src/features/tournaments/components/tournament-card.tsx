@@ -7,7 +7,8 @@ import { cn } from "@/lib/cn";
 import type { TournamentCard as Card } from "../queries";
 import { TournamentBanner } from "./tournament-banner";
 
-function timingLine(t: Card): string {
+/** Qué toca ahora en el torneo, en una línea («Inscripción hasta el…», «Empezó el…»). */
+export function timingLine(t: Card): string {
   switch (t.phase) {
     case "registration_upcoming":
       return `Inscripción desde el ${formatShortDate(t.registrationOpensAt)}`;
@@ -32,12 +33,12 @@ export function TournamentCard({ tournament: t, className, headingLevel = "h3" }
   return (
     <article
       className={cn(
-        "group relative flex flex-col overflow-hidden rounded-card border border-line bg-surface shadow-card transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-brand/60 hover:shadow-lift",
+        "group relative flex flex-col overflow-hidden rounded-card border border-line bg-surface shadow-card transition-[transform,box-shadow,border-color] duration-200 ease-out hover:-translate-y-0.5 hover:border-brand/60 hover:shadow-lift",
         className,
       )}
     >
       <div className="relative aspect-[16/7] overflow-hidden bg-night">
-        <TournamentBanner seed={t.slug} mediaId={t.bannerMediaId} className="transition-transform duration-500 group-hover:scale-[1.04]" />
+        <TournamentBanner seed={t.slug} mediaId={t.bannerMediaId} className="transition-transform duration-500 ease-out group-hover:scale-[1.03]" />
         <div aria-hidden className="absolute inset-x-0 bottom-0 h-px bg-linear-to-r from-transparent via-brand/70 to-transparent" />
         <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
           <PhaseBadge phase={t.phase} className="shadow-sm" />

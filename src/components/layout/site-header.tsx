@@ -33,14 +33,14 @@ export async function SiteHeader() {
         <Link href="/" aria-label="Kings Legend, ir al inicio" className="shrink-0">
           <Logo />
         </Link>
-        <nav aria-label={t("nav.mainMenu")} className="ml-4 hidden md:block">
+        <nav aria-label={t("nav.mainMenu")} className="ml-4 hidden lg:block">
           <NavLinks items={MAIN_NAV} />
         </nav>
         <div className="ml-auto flex items-center gap-2">
           {headerUser ? (
             <UserMenu user={headerUser} />
           ) : (
-            <div className="hidden items-center gap-2 md:flex">
+            <div className="hidden items-center gap-2 lg:flex">
               <ButtonLink href="/acceso" variant="ghost">
                 {t("nav.signIn")}
               </ButtonLink>

@@ -5,7 +5,7 @@ import { cn } from "@/lib/cn";
 const PALETTES = [
   { bg: "#0a1428", a: "#c8aa6e", b: "#0ac8b9" },
   { bg: "#03161c", a: "#0ac8b9", b: "#c8aa6e" },
-  { bg: "#120c24", a: "#9d74ff", b: "#c8aa6e" },
+  { bg: "#160d05", a: "#f0a03c", b: "#e6cd94" },
   { bg: "#190a12", a: "#e84057", b: "#c8aa6e" },
   { bg: "#051a16", a: "#2fd6a4", b: "#e6cd94" },
 ];

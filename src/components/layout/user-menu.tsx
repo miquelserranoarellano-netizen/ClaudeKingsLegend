@@ -81,7 +81,7 @@ export function UserMenu({ user }: { user: HeaderUser }) {
       </Link>
       <Disclosure
         label="Menú de la cuenta"
-        buttonClassName="hidden items-center gap-2 rounded-sm border border-transparent py-1 pr-2 pl-1 hover:border-brand/40 hover:bg-white/5 md:flex"
+        buttonClassName="hidden items-center gap-2 rounded-sm border border-transparent py-1 pr-2 pl-1 hover:border-brand/40 hover:bg-white/5 lg:flex"
         panelClassName="w-60"
         button={
           <>
@@ -102,7 +102,7 @@ export function MobileMenu({ items, user }: { items: NavItem[]; user: HeaderUser
     <Disclosure
       label="Abrir menú"
       // Fuera del flujo en escritorio: si no, el hueco del flex desplaza la cabecera 8 px.
-      className="md:hidden"
+      className="lg:hidden"
       buttonClassName="inline-flex size-10 items-center justify-center rounded-sm text-ink hover:bg-white/5"
       panelClassName="fixed inset-x-3 top-16 mt-1 max-h-[calc(100dvh-5rem)] overflow-y-auto p-2"
       button={<Menu aria-hidden className="size-5" />}
@@ -119,7 +119,7 @@ export function MobileMenu({ items, user }: { items: NavItem[]; user: HeaderUser
             Entrar
           </Link>
           <Link href="/registro" className={buttonClasses("hex")}>
-            Crear cuenta
+            Apúntate gratis
           </Link>
         </div>
       )}

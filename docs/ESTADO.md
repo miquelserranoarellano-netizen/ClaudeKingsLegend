@@ -9,7 +9,7 @@ creada) y con imagen nueva «gamer». Auditoría completa en `docs/AUDITORIA.md`
 | Área | Estado |
 | --- | --- |
 | Identidad visual (tema oscuro «noche azulada» con oro y cian, tipografías Spectral y Barlow Condensed, emblema y logotipo propios, botones y marcos dorados, cuadros y tablas con podio; tokens en `src/app/globals.css`) | Hecho |
-| Portada (cifras reales, abiertos, en curso, próximos, resultados, próximos partidos, ranking, cómo participar, noticias, estados vacíos) | Hecho |
+| Portada de venta (arte oficial de LoL, la plataforma en acción, premios reales de la base de datos, pasos, torneos y liga al día solo si hay datos) y acceso simplificado; *skills* de diseño en `.claude/skills` y taste-skill como *plugin* | Hecho |
 | Explorador `/torneos` (búsqueda, estado, formato, tipo, fechas, orden, paginación) | Hecho |
 | Detalle de torneo (información, participantes, calendario, cuadro o clasificación, reglas, premios, campeón, anuncios, inscripción según rol y fase) | Hecho |
 | Página de partido (marcador, plantillas, MVP, historial de resultados, evidencias privadas, disputas; formularios según rol) | Hecho |
@@ -116,9 +116,11 @@ creada) y con imagen nueva «gamer». Auditoría completa en `docs/AUDITORIA.md`
 12. **Sin *proxy* (middleware) de Next.js**: en Cloudflare rompía las peticiones con cookies. Cada página
     privada comprueba la sesión con su ruta exacta (lo vigila una prueba).
 13. **RLS sin políticas** en todas las tablas: la aplicación no usa la API REST de Supabase, así que se cierra.
-14. **Imagen inspirada en la web de League of Legends, pero propia**: paleta, emblema, logotipo y banners son
-    originales (SVG hechos a mano) y las tipografías son libres (Google Fonts). No se usa ningún logotipo,
-    arte, fuente ni recurso de Riot Games; solo el nombre del juego y el aviso legal del pie.
+14. **Arte oficial de League of Legends solo en la portada**: se carga desde Data Dragon, el CDN público de
+    Riot para proyectos de la comunidad, como permite su política para fans («Legal Jibber Jabber»), con su
+    aviso en el pie (`common.notAffiliated`). Son las ilustraciones de las *skins* de los Mundiales (lista en
+    `src/components/landing/lol-art.ts`). La paleta, el emblema, el logotipo y los banners siguen siendo
+    propios; ningún logotipo de Riot.
 
 ## Datos locales
 

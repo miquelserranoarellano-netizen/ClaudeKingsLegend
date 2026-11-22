@@ -33,7 +33,7 @@ export const es = {
     tbd: "Por decidir",
     bye: "BYE",
     notAffiliated:
-      "Kings Legend no está afiliado, respaldado ni patrocinado por Riot Games. League of Legends es una marca registrada de Riot Games, Inc.",
+      "Kings Legend no está respaldado por Riot Games y no refleja las opiniones de Riot Games ni de nadie que participe oficialmente en la producción o gestión de sus propiedades. Riot Games y todas sus propiedades asociadas son marcas comerciales o marcas registradas de Riot Games, Inc. El arte de League of Legends es de Riot Games.",
   },
   nav: {
     home: "Inicio",
@@ -44,7 +44,7 @@ export const es = {
     dashboard: "Mi panel",
     admin: "Administración",
     signIn: "Entrar",
-    signUp: "Crear cuenta",
+    signUp: "Apúntate gratis",
     signOut: "Cerrar sesión",
     profile: "Perfil público",
     notifications: "Notificaciones",
