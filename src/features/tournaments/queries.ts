@@ -4,6 +4,7 @@ import { cache } from "react";
 import { championOf } from "@/domain/competition/elimination";
 import { type RoundName, roundName } from "@/domain/competition/round-names";
 import { computeStandings, type StandingRow, type Tiebreaker } from "@/domain/competition/standings";
+import { type SwissGame, type SwissRecord, swissRecords, WORLDS_SWISS } from "@/domain/competition/swiss";
 import type { BracketKind, EngineMatch } from "@/domain/competition/types";
 import { type Actor, canManageTournament, canViewTournament } from "@/domain/permissions";
 import { phaseCategory, type TournamentCategory, tournamentPhase, type TournamentPhase } from "@/domain/tournament/phase";
@@ -353,7 +354,8 @@ export const getCompetition = cache(async (tournamentId: string, format: Tournam
   const totals = new Map<BracketKind, number>();
   for (const r of rounds) totals.set(r.bracket, Math.max(totals.get(r.bracket) ?? 0, r.number));
 
-  const order: Record<BracketKind, number> = { winners: 0, losers: 1, grand_final: 2, league: 3 };
+  // El suizo va primero: es la fase 1; luego, la eliminatoria con los clasificados.
+  const order: Record<BracketKind, number> = { swiss: -1, winners: 0, losers: 1, grand_final: 2, league: 3 };
   return rounds
     .sort((x, y) => order[x.bracket] - order[y.bracket] || x.number - y.number)
     .map((r) => ({
@@ -409,13 +411,14 @@ export const getLeagueStandings = cache(async (tournamentId: string): Promise<St
     confirmed.map((m) => ({
       a: m.participantAId!,
       b: m.participantBId!,
-      winner: m.winnerId === m.participantAId ? "a" : "b",
+      winner: m.winnerId === null ? null : m.winnerId === m.participantAId ? "a" : "b",
       scoreA: m.scoreA ?? 0,
       scoreB: m.scoreB ?? 0,
       isForfeit: m.isForfeit,
     })),
     {
       pointsWin: rules?.pointsWin ?? 3,
+      pointsDraw: rules?.pointsDraw ?? 1,
       pointsLoss: rules?.pointsLoss ?? 0,
       pointsForfeitLoss: rules?.pointsForfeitLoss ?? 0,
       tiebreakers: (rules?.tiebreakers ?? []) as Tiebreaker[],
@@ -423,6 +426,34 @@ export const getLeagueStandings = cache(async (tournamentId: string): Promise<St
   );
   const byId = new Map(participants.map((p) => [p.id, p]));
   return table.map((row) => ({ ...row, participant: byId.get(row.participantId)! }));
+});
+
+export interface SwissStandingView extends SwissRecord {
+  participant: ParticipantRef;
+}
+
+/** Tabla de la fase suiza (balance de cada participante), calculada a partir de sus partidos. */
+export const getSwissStandings = cache(async (tournamentId: string): Promise<SwissStandingView[]> => {
+  const db = await getDb();
+  const [participants, rows] = await Promise.all([
+    getParticipants(tournamentId),
+    db
+      .select({ match: matches, round: tournamentRounds.number })
+      .from(matches)
+      .innerJoin(tournamentRounds, eq(tournamentRounds.id, matches.roundId))
+      .where(and(eq(matches.tournamentId, tournamentId), eq(tournamentRounds.bracket, "swiss"))),
+  ]);
+  const bySeed = [...participants].sort((x, y) => (x.seed ?? 999) - (y.seed ?? 999));
+  const games: SwissGame[] = rows
+    .filter(({ match }) => match.participantAId !== null)
+    .map(({ match, round }) => ({
+      round,
+      a: match.participantAId!,
+      b: match.isBye ? null : match.participantBId,
+      winner: match.status === "confirmed" && match.winnerId ? (match.winnerId === match.participantAId ? "a" : "b") : null,
+    }));
+  const byId = new Map(participants.map((p) => [p.id, p]));
+  return swissRecords(bySeed.map((p) => p.id), games, WORLDS_SWISS).map((r) => ({ ...r, participant: byId.get(r.participantId)! }));
 });
 
 /** Campeón de un torneo terminado (o `null`). */

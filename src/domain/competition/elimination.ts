@@ -183,7 +183,7 @@ function kill(map: Map<string, EngineMatch>, ref: SlotRef | null): void {
   else target.bDead = true;
 }
 
-const BRACKET_ORDER: Record<EngineMatch["bracket"], number> = { winners: 0, losers: 1, grand_final: 2, league: 3 };
+const BRACKET_ORDER: Record<EngineMatch["bracket"], number> = { winners: 0, losers: 1, grand_final: 2, league: 3, swiss: 4 };
 
 function sorted(map: Map<string, EngineMatch>): EngineMatch[] {
   return [...map.values()].sort(
@@ -247,11 +247,28 @@ function diff(before: EngineMatch[], after: Map<string, EngineMatch>): string[] 
 }
 
 /** Registra el ganador de un partido y hace avanzar a ganador y perdedor. */
-export function recordResult(matches: EngineMatch[], matchId: string, winner: Side): EngineChange {
+/** Partido que no alimenta a ningún otro (liga o fase suiza): su resultado no mueve a nadie en un cuadro. */
+export function isUnlinked(m: EngineMatch): boolean {
+  return m.next === null && m.loserNext === null && (m.bracket === "league" || m.bracket === "swiss");
+}
+
+/**
+ * Registra el resultado de un partido abierto y propaga ganador y perdedor. `winner === null` es un empate,
+ * que solo cabe en partidos sin enlaces (liga): en un cuadro alguien tiene que pasar.
+ */
+export function recordResult(matches: EngineMatch[], matchId: string, winner: Side | null): EngineChange {
   const map = cloneAll(matches);
   const m = get(map, matchId);
   if (m.status !== "open") throw new Error("El partido ya tiene resultado o está anulado.");
   if (m.a === null || m.b === null) throw new Error("El partido todavía no tiene a sus dos participantes.");
+
+  if (winner === null || isUnlinked(m)) {
+    if (winner === null && (!isUnlinked(m) || m.bracket !== "league")) throw new Error("Solo un partido de liga puede terminar en empate.");
+    m.status = "done";
+    m.winner = winner;
+    m.isBye = false;
+    return { matches: sorted(map), changedIds: diff(matches, map) };
+  }
 
   m.status = "done";
   m.winner = winner;
@@ -307,14 +324,19 @@ export type CorrectionPlan =
 export function planCorrection(
   matches: EngineMatch[],
   matchId: string,
-  newWinner: Side,
+  newWinner: Side | null,
   isLocked: (matchId: string) => boolean = () => false,
 ): CorrectionPlan {
   const map = cloneAll(matches);
   const m = get(map, matchId);
-  if (m.status !== "done" || m.isBye || m.winner === null) {
-    throw new Error("Solo se puede corregir un partido jugado.");
+  if (m.status !== "done" || m.isBye) throw new Error("Solo se puede corregir un partido jugado.");
+  // Liga o suizo: cambia el resultado y nada más (en el suizo, el servicio impide corregir rondas ya superadas).
+  if (isUnlinked(m)) {
+    if (newWinner === null && m.bracket !== "league") throw new Error("Solo un partido de liga puede terminar en empate.");
+    m.winner = newWinner;
+    return { ok: true, change: { matches: sorted(map), changedIds: diff(matches, map) } };
   }
+  if (m.winner === null || newWinner === null) throw new Error("En un cuadro no hay empates.");
   if (m.winner === newWinner) return { ok: true, change: { matches: sorted(map), changedIds: [] } };
 
   const oldWinner = m[m.winner]!;

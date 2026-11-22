@@ -13,9 +13,11 @@ export function StandingsTable({
 }: {
   rows: StandingView[];
   tiebreakers: string[];
-  points: { win: number; loss: number; forfeitLoss: number };
+  /** `draw`: puntos por empate; solo se muestra la columna de empates en ligas con series de número par (BO2). */
+  points: { win: number; draw?: number; loss: number; forfeitLoss: number };
   compact?: boolean;
 }) {
+  const showDraws = points.draw !== undefined;
   const unresolved = rows.some((r) => r.decidedBySeed && r.played > 0);
   return (
     <div className="space-y-3">
@@ -28,6 +30,7 @@ export function StandingsTable({
               <th scope="col" className="px-3 py-2.5 text-left">Participante</th>
               <th scope="col" className="px-2 py-2.5 text-center" title="Partidos jugados">PJ</th>
               <th scope="col" className="px-2 py-2.5 text-center" title="Victorias">V</th>
+              {showDraws && <th scope="col" className="px-2 py-2.5 text-center" title="Empates">E</th>}
               <th scope="col" className="px-2 py-2.5 text-center" title="Derrotas">D</th>
               {!compact && (
                 <>
@@ -66,6 +69,7 @@ export function StandingsTable({
                 </td>
                 <td className="px-2 py-2.5 text-center tabular">{row.played}</td>
                 <td className="px-2 py-2.5 text-center tabular">{row.wins}</td>
+                {showDraws && <td className="px-2 py-2.5 text-center tabular">{row.draws}</td>}
                 <td className="px-2 py-2.5 text-center tabular">{row.losses}</td>
                 {!compact && (
                   <>
@@ -82,7 +86,7 @@ export function StandingsTable({
       </div>
       {!compact && (
         <p className="text-xs text-ink-3">
-          Victoria {points.win} pts · derrota {points.loss} pts · derrota por incomparecencia {points.forfeitLoss} pts. Desempates, en orden:{" "}
+          Victoria {points.win} pts{showDraws ? ` · empate ${points.draw} pts` : ""} · derrota {points.loss} pts · derrota por incomparecencia {points.forfeitLoss} pts. Desempates, en orden:{" "}
           {tiebreakers.length > 0 ? tiebreakers.map((tb) => label("tiebreaker", tb as "wins").toLowerCase()).join(", ") : "ninguno"}; después, la
           semilla.
           {unresolved && " * Puesto decidido por semilla: ningún desempate lo resolvió."}

@@ -65,7 +65,10 @@ function rulesValues(input: TournamentInput) {
     maxSubstitutes: input.participantType === "solo" ? 0 : input.maxSubstitutes,
     bestOf: input.bestOf,
     bestOfFinal: input.bestOfFinal,
+    swissDeciderBestOf: input.swissDeciderBestOf,
+    playoffBestOf: input.playoffBestOf,
     pointsWin: input.pointsWin,
+    pointsDraw: input.pointsDraw,
     pointsLoss: input.pointsLoss,
     pointsForfeitLoss: input.pointsForfeitLoss,
     tiebreakers: input.tiebreakers,
@@ -151,7 +154,7 @@ export async function createTournament(actor: CurrentUser, input: TournamentInpu
 }
 
 const LOCKED_TOURNAMENT_FIELDS = ["format", "participantType", "minParticipants", "maxParticipants"] as const;
-const LOCKED_RULE_FIELDS = ["teamSize", "maxSubstitutes", "bestOf", "bestOfFinal", "leagueLegs", "grandFinalReset"] as const;
+const LOCKED_RULE_FIELDS = ["teamSize", "maxSubstitutes", "bestOf", "bestOfFinal", "swissDeciderBestOf", "playoffBestOf", "leagueLegs", "grandFinalReset"] as const;
 
 export async function updateTournament(
   actor: CurrentUser,
@@ -409,6 +412,9 @@ export async function startTournament(actor: CurrentUser, tournamentId: string):
       .from(tournamentStages)
       .where(eq(tournamentStages.tournamentId, tournamentId));
     if (existing) throw new AppError("invalid_state", "errors.alreadyGenerated");
+    if (t.format === "swiss" && (participants.length < 8 || participants.length % 2 === 1)) {
+      throw new AppError("invalid_state", "errors.swissParticipants", { count: participants.length });
+    }
 
     // Semillas definitivas: las fijadas por la organización y, detrás, el orden de aprobación.
     await tx.update(tournamentParticipants).set({ seed: null }).where(eq(tournamentParticipants.tournamentId, tournamentId));
@@ -426,6 +432,9 @@ export async function startTournament(actor: CurrentUser, tournamentId: string):
         bestOfFinal: rules.bestOfFinal,
         leagueLegs: rules.leagueLegs,
         grandFinalReset: rules.grandFinalReset,
+        swissDeciderBestOf: rules.swissDeciderBestOf,
+        playoffBestOf: rules.playoffBestOf,
+        startsAt: t.startsAt,
       },
     });
 

@@ -32,8 +32,8 @@ const updatedAt = () =>
     .$onUpdate(() => new Date());
 
 /**
- * Fase de la competición. Hoy cada torneo tiene una sola fase (su formato), pero la tabla permite
- * encadenar, por ejemplo, una liga de grupos y un cuadro final.
+ * Fase de la competición. Casi todos los torneos tienen una sola fase (su formato); el sistema suizo
+ * encadena dos: la fase suiza (1) y la eliminatoria con los clasificados (2).
  */
 export const tournamentStages = pgTable(
   "tournament_stages",
@@ -73,7 +73,7 @@ export const tournamentRounds = pgTable(
   (t) => [
     uniqueIndex("rounds_stage_bracket_number_uq").on(t.stageId, t.bracket, t.number),
     index("rounds_tournament_idx").on(t.tournamentId),
-    check("rounds_best_of_ck", sql`${t.bestOf} in (1, 3, 5, 7)`),
+    check("rounds_best_of_ck", sql`${t.bestOf} in (1, 2, 3, 5, 7)`),
   ],
 ).enableRLS();
 
@@ -133,7 +133,7 @@ export const matches = pgTable(
     index("matches_stage_idx").on(t.stageId),
     index("matches_next_idx").on(t.nextMatchId).where(sql`${t.nextMatchId} is not null`),
     index("matches_loser_next_idx").on(t.loserNextMatchId).where(sql`${t.loserNextMatchId} is not null`),
-    check("matches_best_of_ck", sql`${t.bestOf} in (1, 3, 5, 7)`),
+    check("matches_best_of_ck", sql`${t.bestOf} in (1, 2, 3, 5, 7)`),
     check(
       "matches_winner_ck",
       sql`${t.winnerId} is null or ${t.winnerId} = ${t.participantAId} or ${t.winnerId} = ${t.participantBId}`,

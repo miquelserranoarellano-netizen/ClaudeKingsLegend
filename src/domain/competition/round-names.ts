@@ -6,7 +6,7 @@ import type { BracketKind } from "./types";
  */
 export type RoundName =
   | { key: "rounds.final" | "rounds.semifinal" | "rounds.quarterfinal" | "rounds.winnersFinal" | "rounds.losersFinal" | "rounds.grandFinal" | "rounds.grandFinalReset"; params?: undefined }
-  | { key: "rounds.roundOf" | "rounds.losers" | "rounds.matchday"; params: { n: number } }
+  | { key: "rounds.roundOf" | "rounds.losers" | "rounds.matchday" | "rounds.swiss"; params: { n: number } }
   | { key: "rounds.winners"; params: { name: RoundName } };
 
 function bySize(matchesInRound: number): RoundName {
@@ -25,6 +25,7 @@ export function roundName(input: {
 }): RoundName {
   const { bracket, number, totalRounds } = input;
   if (bracket === "league") return { key: "rounds.matchday", params: { n: number } };
+  if (bracket === "swiss") return { key: "rounds.swiss", params: { n: number } };
   if (bracket === "grand_final") return number === 1 ? { key: "rounds.grandFinal" } : { key: "rounds.grandFinalReset" };
   if (bracket === "losers") return number === totalRounds ? { key: "rounds.losersFinal" } : { key: "rounds.losers", params: { n: number } };
   const matchesInRound = 2 ** (totalRounds - number);

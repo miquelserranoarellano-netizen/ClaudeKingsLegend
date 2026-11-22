@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { asc, eq, sql } from "drizzle-orm";
 import { generateDoubleElimination, generateSingleElimination } from "@/domain/competition/elimination";
 import { generateRoundRobin } from "@/domain/competition/round-robin";
+import { planSwissRound, type SwissGame, type SwissRoundPlan, swissQualifiers, swissRecords, WORLDS_SWISS } from "@/domain/competition/swiss";
 import type { BracketKind, EngineMatch } from "@/domain/competition/types";
 import type { Tx } from "@/server/db/client";
 import { matches, tournamentRounds, tournamentStages } from "@/server/db/schema";
@@ -24,63 +25,112 @@ export function idleStatus(hasBothParticipants: boolean, scheduledAt: Date | nul
 }
 
 export interface StageConfig {
-  format: "single_elimination" | "double_elimination" | "league";
+  format: "single_elimination" | "double_elimination" | "league" | "swiss";
   bestOf: number;
   bestOfFinal: number;
   leagueLegs: number;
   grandFinalReset: boolean;
+  /** Suizo: series de los partidos decisivos y de la eliminatoria final. */
+  swissDeciderBestOf: number;
+  playoffBestOf: number;
+  /** Liga: la primera jornada se programa en esta fecha y cada una de las siguientes, una semana después. */
+  startsAt: Date;
 }
 
-/** Genera la fase completa (rondas y partidos) y la guarda. Devuelve el id de la fase. */
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+/** Genera la primera fase (rondas y partidos) y la guarda. Devuelve el id de la fase. */
 export async function generateStage(
   tx: Tx,
   input: { tournamentId: string; actorId: string; config: StageConfig; participantIdsBySeed: string[] },
 ): Promise<string> {
   const { tournamentId, config } = input;
+  if (config.format === "single_elimination" || config.format === "double_elimination") {
+    return insertEliminationStage(tx, {
+      tournamentId,
+      actorId: input.actorId,
+      number: 1,
+      format: config.format,
+      participantIdsBySeed: input.participantIdsBySeed,
+      bestOf: config.bestOf,
+      bestOfFinal: config.bestOfFinal,
+      grandFinalReset: config.grandFinalReset,
+    });
+  }
+
   const [stage] = await tx
     .insert(tournamentStages)
     .values({ tournamentId, number: 1, format: config.format, status: "in_progress", generatedById: input.actorId })
     .returning({ id: tournamentStages.id });
   const stageId = stage!.id;
 
-  if (config.format === "league") {
-    const rounds = generateRoundRobin(input.participantIdsBySeed, config.leagueLegs === 2 ? 2 : 1);
-    for (const round of rounds) {
-      const [row] = await tx
-        .insert(tournamentRounds)
-        .values({ stageId, tournamentId, bracket: "league", number: round.number, bestOf: config.bestOf })
-        .returning({ id: tournamentRounds.id });
-      if (round.pairings.length === 0) continue;
-      await tx.insert(matches).values(
-        round.pairings.map((pairing, position) => ({
-          tournamentId,
-          stageId,
-          roundId: row!.id,
-          position,
-          participantAId: pairing.a,
-          participantBId: pairing.b,
-          bestOf: config.bestOf,
-          status: "pending" as const,
-        })),
-      );
-    }
+  if (config.format === "swiss") {
+    const plan = planSwissRound(input.participantIdsBySeed, [], WORLDS_SWISS);
+    await insertSwissRound(tx, { tournamentId, stageId, plan: plan!, bestOf: config.bestOf, deciderBestOf: config.swissDeciderBestOf });
     return stageId;
   }
 
+  // Liga: una jornada por semana (la organización puede moverlas después, partido a partido o por jornadas).
+  const rounds = generateRoundRobin(input.participantIdsBySeed, config.leagueLegs === 2 ? 2 : 1);
+  for (const round of rounds) {
+    const [row] = await tx
+      .insert(tournamentRounds)
+      .values({ stageId, tournamentId, bracket: "league", number: round.number, bestOf: config.bestOf })
+      .returning({ id: tournamentRounds.id });
+    if (round.pairings.length === 0) continue;
+    const scheduledAt = new Date(config.startsAt.getTime() + (round.number - 1) * WEEK_MS);
+    await tx.insert(matches).values(
+      round.pairings.map((pairing, position) => ({
+        tournamentId,
+        stageId,
+        roundId: row!.id,
+        position,
+        participantAId: pairing.a,
+        participantBId: pairing.b,
+        bestOf: config.bestOf,
+        scheduledAt,
+        status: idleStatus(true, scheduledAt),
+      })),
+    );
+  }
+  return stageId;
+}
+
+/** Guarda un cuadro de eliminación (simple o doble) como fase `number` del torneo. */
+export async function insertEliminationStage(
+  tx: Tx,
+  input: {
+    tournamentId: string;
+    actorId: string;
+    number: number;
+    format: "single_elimination" | "double_elimination";
+    participantIdsBySeed: string[];
+    bestOf: number;
+    bestOfFinal: number;
+    grandFinalReset: boolean;
+  },
+): Promise<string> {
+  const { tournamentId } = input;
+  const [stage] = await tx
+    .insert(tournamentStages)
+    .values({ tournamentId, number: input.number, format: input.format, status: "in_progress", generatedById: input.actorId })
+    .returning({ id: tournamentStages.id });
+  const stageId = stage!.id;
+
   const engine =
-    config.format === "single_elimination"
+    input.format === "single_elimination"
       ? generateSingleElimination(input.participantIdsBySeed, randomUUID)
-      : generateDoubleElimination(input.participantIdsBySeed, randomUUID, { grandFinalReset: config.grandFinalReset });
+      : generateDoubleElimination(input.participantIdsBySeed, randomUUID, { grandFinalReset: input.grandFinalReset });
 
   const lastWinnersRound = Math.max(...engine.filter((m) => m.bracket === "winners").map((m) => m.round));
   const isFinalRound = (bracket: BracketKind, round: number) =>
-    bracket === "grand_final" || (config.format === "single_elimination" && bracket === "winners" && round === lastWinnersRound);
+    bracket === "grand_final" || (input.format === "single_elimination" && bracket === "winners" && round === lastWinnersRound);
 
   const roundKeys = [...new Set(engine.map((m) => `${m.bracket}:${m.round}`))];
   const roundIds = new Map<string, { id: string; bestOf: number }>();
   for (const key of roundKeys) {
     const [bracket, round] = key.split(":") as [BracketKind, string];
-    const bestOf = isFinalRound(bracket, Number(round)) ? config.bestOfFinal : config.bestOf;
+    const bestOf = isFinalRound(bracket, Number(round)) ? input.bestOfFinal : input.bestOf;
     const [row] = await tx
       .insert(tournamentRounds)
       .values({ stageId, tournamentId, bracket, number: Number(round), bestOf })
@@ -116,6 +166,89 @@ export async function generateStage(
     }),
   );
   return stageId;
+}
+
+/** Guarda una ronda suiza: los cruces (BO3 si son decisivos) y, si lo hay, el BYE ya ganado. */
+async function insertSwissRound(
+  tx: Tx,
+  input: { tournamentId: string; stageId: string; plan: SwissRoundPlan; bestOf: number; deciderBestOf: number },
+): Promise<void> {
+  const { tournamentId, stageId, plan } = input;
+  const [round] = await tx
+    .insert(tournamentRounds)
+    .values({ stageId, tournamentId, bracket: "swiss", number: plan.round, bestOf: input.bestOf })
+    .returning({ id: tournamentRounds.id });
+  const rows: (typeof matches.$inferInsert)[] = plan.pairings.map((pairing, position) => ({
+    tournamentId,
+    stageId,
+    roundId: round!.id,
+    position,
+    participantAId: pairing.a,
+    participantBId: pairing.b,
+    bestOf: pairing.decider ? input.deciderBestOf : input.bestOf,
+    status: "pending" as const,
+  }));
+  if (plan.bye) {
+    rows.push({
+      tournamentId,
+      stageId,
+      roundId: round!.id,
+      position: plan.pairings.length,
+      participantAId: plan.bye,
+      participantBId: null,
+      slotBDead: true,
+      isBye: true,
+      winnerId: plan.bye,
+      bestOf: input.bestOf,
+      status: "confirmed",
+      confirmedAt: new Date(),
+    });
+  }
+  if (rows.length > 0) await tx.insert(matches).values(rows);
+}
+
+/** Partidos de la fase suiza como los ve el motor. */
+export function swissGames(engine: EngineMatch[]): SwissGame[] {
+  return engine
+    .filter((m) => m.bracket === "swiss" && m.a !== null)
+    .map((m) => ({
+      round: m.round,
+      a: m.a!,
+      b: m.isBye ? null : m.b,
+      winner: m.status === "done" ? m.winner : null,
+    }));
+}
+
+/**
+ * Tras confirmar un resultado del suizo: si la ronda ha terminado, empareja la siguiente; si ya no queda
+ * nadie en juego, cierra el suizo y genera la eliminatoria con los clasificados (fase 2), sembrados por
+ * su balance (los 3-0 primero).
+ */
+export async function advanceSwiss(
+  tx: Tx,
+  input: { tournamentId: string; actorId: string; stageId: string; engine: EngineMatch[]; participantIdsBySeed: string[]; config: StageConfig },
+): Promise<"waiting" | "next_round" | "playoffs"> {
+  const games = swissGames(input.engine);
+  if (games.some((g) => g.b !== null && g.winner === null)) return "waiting";
+  const plan = planSwissRound(input.participantIdsBySeed, games, WORLDS_SWISS);
+  if (plan) {
+    await insertSwissRound(tx, { tournamentId: input.tournamentId, stageId: input.stageId, plan, bestOf: input.config.bestOf, deciderBestOf: input.config.swissDeciderBestOf });
+    return "next_round";
+  }
+  const qualifiers = swissQualifiers(swissRecords(input.participantIdsBySeed, games, WORLDS_SWISS));
+  if (qualifiers.length < 2) throw new Error("El suizo ha terminado con menos de dos clasificados.");
+  await tx.update(tournamentStages).set({ status: "completed" }).where(eq(tournamentStages.id, input.stageId));
+  await insertEliminationStage(tx, {
+    tournamentId: input.tournamentId,
+    actorId: input.actorId,
+    number: 2,
+    format: "single_elimination",
+    participantIdsBySeed: qualifiers,
+    bestOf: input.config.playoffBestOf,
+    bestOfFinal: input.config.bestOfFinal,
+    grandFinalReset: false,
+  });
+  return "playoffs";
 }
 
 export interface LoadedStage {

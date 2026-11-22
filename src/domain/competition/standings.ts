@@ -19,6 +19,8 @@ export type Tiebreaker = (typeof TIEBREAKERS)[number];
 
 export interface StandingsRules {
   pointsWin: number;
+  /** Puntos por empate (solo hay empates en series de número par, como el BO2). */
+  pointsDraw: number;
   pointsLoss: number;
   pointsForfeitLoss: number;
   tiebreakers: Tiebreaker[];
@@ -32,7 +34,8 @@ export interface StandingsParticipant {
 export interface StandingsMatch {
   a: string;
   b: string;
-  winner: Side;
+  /** `null`: empate. */
+  winner: Side | null;
   scoreA: number;
   scoreB: number;
   isForfeit: boolean;
@@ -44,6 +47,7 @@ export interface StandingRow {
   position: number;
   played: number;
   wins: number;
+  draws: number;
   losses: number;
   forfeitLosses: number;
   gamesWon: number;
@@ -56,8 +60,16 @@ export interface StandingRow {
 
 type Row = Omit<StandingRow, "position" | "decidedBySeed">;
 
-function pointsFor(rules: StandingsRules, won: boolean, forfeit: boolean): number {
-  if (won) return rules.pointsWin;
+type Outcome = "win" | "draw" | "loss";
+
+function outcomeFor(winner: Side | null, side: Side): Outcome {
+  if (winner === null) return "draw";
+  return winner === side ? "win" : "loss";
+}
+
+function pointsFor(rules: StandingsRules, outcome: Outcome, forfeit: boolean): number {
+  if (outcome === "win") return rules.pointsWin;
+  if (outcome === "draw") return rules.pointsDraw;
   return forfeit ? rules.pointsForfeitLoss : rules.pointsLoss;
 }
 
@@ -74,6 +86,7 @@ export function computeStandings(
         seed: p.seed,
         played: 0,
         wins: 0,
+        draws: 0,
         losses: 0,
         forfeitLosses: 0,
         gamesWon: 0,
@@ -93,15 +106,16 @@ export function computeStandings(
       [b, "b", match.scoreB, match.scoreA],
     ];
     for (const [row, side, gamesFor, gamesAgainst] of sides) {
-      const won = match.winner === side;
+      const outcome = outcomeFor(match.winner, side);
       row.played += 1;
-      row.wins += won ? 1 : 0;
-      row.losses += won ? 0 : 1;
-      row.forfeitLosses += !won && match.isForfeit ? 1 : 0;
+      row.wins += outcome === "win" ? 1 : 0;
+      row.draws += outcome === "draw" ? 1 : 0;
+      row.losses += outcome === "loss" ? 1 : 0;
+      row.forfeitLosses += outcome === "loss" && match.isForfeit ? 1 : 0;
       row.gamesWon += gamesFor;
       row.gamesLost += gamesAgainst;
       row.gameDifference = row.gamesWon - row.gamesLost;
-      row.points += pointsFor(rules, won, match.isForfeit);
+      row.points += pointsFor(rules, outcome, match.isForfeit);
     }
   }
 
@@ -158,8 +172,8 @@ function criterionValue(
       const mini = new Map<string, number>(group.map((r) => [r.participantId, 0]));
       for (const m of matches) {
         if (!ids.has(m.a) || !ids.has(m.b)) continue;
-        mini.set(m.a, mini.get(m.a)! + pointsFor(rules, m.winner === "a", m.isForfeit));
-        mini.set(m.b, mini.get(m.b)! + pointsFor(rules, m.winner === "b", m.isForfeit));
+        mini.set(m.a, mini.get(m.a)! + pointsFor(rules, outcomeFor(m.winner, "a"), m.isForfeit));
+        mini.set(m.b, mini.get(m.b)! + pointsFor(rules, outcomeFor(m.winner, "b"), m.isForfeit));
       }
       return (row) => mini.get(row.participantId) ?? 0;
     }

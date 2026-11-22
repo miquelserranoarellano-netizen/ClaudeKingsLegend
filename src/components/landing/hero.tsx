@@ -46,7 +46,7 @@ export function LandingHero({ main, secondary, status, aside }: { main: LandingA
             </ButtonLink>
           </div>
           <p className="mt-6 animate-enter text-sm text-ink-3 [animation-delay:240ms]">
-            Gratis para jugadores y equipos · Eliminatoria, doble eliminación o liga
+            Gratis para jugadores y equipos · Sistema suizo como los Worlds y liga semanal
           </p>
         </div>
         {aside && <div className="w-full max-w-sm shrink-0 animate-enter [animation-delay:320ms]">{aside}</div>}

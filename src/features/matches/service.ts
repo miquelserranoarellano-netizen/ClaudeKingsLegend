@@ -1,7 +1,7 @@
 import "server-only";
-import { and, eq, sql } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { championOf, planCorrection, recordResult } from "@/domain/competition/elimination";
-import { checkSeriesScore, gamesMatchScore, winsNeeded } from "@/domain/competition/series";
+import { allowsDraw, checkSeriesScore, gamesMatchScore, winsNeeded } from "@/domain/competition/series";
 import type { EngineMatch, Side } from "@/domain/competition/types";
 import { canManageTournament, canResolveDisputes, canValidateResults, reportingSide } from "@/domain/permissions";
 import { formatDateTime } from "@/lib/format";
@@ -24,10 +24,10 @@ import {
 } from "@/server/db/schema";
 import { AppError, forbidden, isUniqueViolation, notFound } from "@/server/errors";
 import { enforceRateLimit } from "@/server/rate-limit";
-import { idleStatus, type LoadedStage, lockAndLoadStage, type MatchRow, persistEngineChanges } from "../competition/stage-store";
+import { advanceSwiss, idleStatus, type LoadedStage, lockAndLoadStage, type MatchRow, persistEngineChanges } from "../competition/stage-store";
 import { storeImage } from "../media/service";
 import { notify } from "../notifications/service";
-import { lockTournament } from "../tournaments/service";
+import { lockTournament, tournamentAudience } from "../tournaments/service";
 
 type TournamentRow = typeof tournaments.$inferSelect;
 
@@ -131,10 +131,14 @@ export interface ScoreInput {
   mvpUserId: string | null;
 }
 
-/** Valida marcador, detalle de partidas y MVP contra las reglas del partido. Devuelve el bando ganador. */
-function validateScore(ctx: MatchContext, input: ScoreInput): Side {
+/**
+ * Valida marcador, detalle de partidas y MVP contra las reglas del partido. Devuelve el bando ganador, o
+ * `null` si es un empate (solo en series de número par, como el BO2 de las ligas).
+ */
+function validateScore(ctx: MatchContext, input: ScoreInput): Side | null {
   const check = checkSeriesScore(ctx.match.bestOf, input.scoreA, input.scoreB);
   if (!check.ok) {
+    if (allowsDraw(ctx.match.bestOf)) throw new AppError("validation", "errors.invalidScoreDraw", { bestOf: ctx.match.bestOf });
     throw new AppError("validation", "errors.invalidScore", { bestOf: ctx.match.bestOf, needed: winsNeeded(ctx.match.bestOf) });
   }
   if (input.gameWinners && input.gameWinners.length > 0 && !gamesMatchScore(ctx.match.bestOf, input.scoreA, input.scoreB, input.gameWinners)) {
@@ -332,10 +336,13 @@ async function writeGames(tx: Tx, ctx: MatchContext, gameWinners: Side[] | null)
 
 /** Cierra o reabre la competición según el estado del cuadro tras un cambio. */
 async function syncCompletion(tx: Tx, ctx: MatchContext, engine: EngineMatch[]): Promise<boolean> {
+  // En el suizo, el torneo termina con la final de la eliminatoria (fase 2), nunca en la fase suiza.
   const finished =
     ctx.tournament.format === "league"
       ? engine.every((m) => m.status !== "open")
-      : championOf(engine) !== null;
+      : ctx.tournament.format === "swiss"
+        ? ctx.loaded.stage.number === 2 && championOf(engine) !== null
+        : championOf(engine) !== null;
   const now = new Date();
   if (finished && ctx.tournament.status === "in_progress") {
     await tx.update(tournamentStages).set({ status: "completed" }).where(eq(tournamentStages.id, ctx.loaded.stage.id));
@@ -352,6 +359,54 @@ async function syncCompletion(tx: Tx, ctx: MatchContext, engine: EngineMatch[]):
       .where(eq(tournaments.id, ctx.tournament.id));
   }
   return finished;
+}
+
+/** Participantes de la fase suiza en orden de semilla (la del inicio del torneo). */
+async function participantIdsBySeed(tx: Tx, tournamentId: string): Promise<string[]> {
+  const rows = await tx
+    .select({ id: tournamentParticipants.id })
+    .from(tournamentParticipants)
+    .where(eq(tournamentParticipants.tournamentId, tournamentId))
+    .orderBy(sql`${tournamentParticipants.seed} asc nulls last`, asc(tournamentParticipants.createdAt));
+  return rows.map((r) => r.id);
+}
+
+/** En la fase suiza, al cerrarse una ronda se empareja la siguiente o, si ha terminado, la eliminatoria. */
+async function continueSwiss(tx: Tx, ctx: MatchContext, actor: CurrentUser, engine: EngineMatch[]): Promise<void> {
+  if (ctx.tournament.format !== "swiss" || ctx.loaded.stage.number !== 1) return;
+  const outcome = await advanceSwiss(tx, {
+    tournamentId: ctx.tournament.id,
+    actorId: actor.id,
+    stageId: ctx.loaded.stage.id,
+    engine,
+    participantIdsBySeed: await participantIdsBySeed(tx, ctx.tournament.id),
+    config: {
+      format: "swiss",
+      bestOf: ctx.rules.bestOf,
+      bestOfFinal: ctx.rules.bestOfFinal,
+      leagueLegs: ctx.rules.leagueLegs,
+      grandFinalReset: false,
+      swissDeciderBestOf: ctx.rules.swissDeciderBestOf,
+      playoffBestOf: ctx.rules.playoffBestOf,
+      startsAt: ctx.tournament.startsAt,
+    },
+  });
+  if (outcome === "waiting") return;
+  const audience = await tournamentAudience(tx, ctx.tournament.id);
+  await notify(
+    tx,
+    audience,
+    outcome === "playoffs" ? "swissPlayoffs" : "swissNextRound",
+    { tournament: ctx.tournament.name },
+    `/torneos/${ctx.tournament.slug}?vista=cuadro`,
+  );
+  await audit(tx, {
+    actorId: actor.id,
+    action: outcome === "playoffs" ? "swiss.playoffs" : "swiss.round",
+    entityType: "stage",
+    entityId: ctx.loaded.stage.id,
+    tournamentId: ctx.tournament.id,
+  });
 }
 
 export async function validateResult(
@@ -412,7 +467,7 @@ export async function validateResult(
       .update(matches)
       .set({
         status: "confirmed",
-        winnerId: winner === "a" ? ctx.match.participantAId : ctx.match.participantBId,
+        winnerId: winner === null ? null : winner === "a" ? ctx.match.participantAId : ctx.match.participantBId,
         scoreA: score.scoreA,
         scoreB: score.scoreB,
         isForfeit: score.isForfeit,
@@ -435,6 +490,7 @@ export async function validateResult(
       .where(and(eq(matchResults.matchId, ctx.match.id), eq(matchResults.status, "pending")));
     await writeGames(tx, ctx, score.gameWinners);
     await syncCompletion(tx, ctx, change.matches);
+    await continueSwiss(tx, ctx, actor, change.matches);
 
     await notify(tx, audienceOf(ctx), "resultConfirmed", { ...sideNames(ctx), scoreA: score.scoreA, scoreB: score.scoreB }, matchLink(ctx));
     await audit(tx, {
@@ -467,6 +523,13 @@ export async function correctResult(
     if (!input.reason.trim()) throw new AppError("validation", "errors.correctionReasonRequired");
     assertVersion(ctx.match, input.version);
     const winner = validateScore(ctx, input);
+    if (ctx.loaded.stage.format === "swiss") {
+      // Las rondas siguientes ya se emparejaron con este resultado: solo se corrige la ronda en juego.
+      const lastRound = Math.max(...[...ctx.loaded.rows.values()].map((r) => r.roundNumber));
+      if (ctx.loaded.stage.status === "completed" || ctx.match.roundNumber < lastRound) {
+        throw new AppError("invalid_state", "errors.swissCorrectionBlocked");
+      }
+    }
 
     const pending = await tx
       .select({ matchId: matchResults.matchId })
@@ -485,7 +548,7 @@ export async function correctResult(
     const updated = await tx
       .update(matches)
       .set({
-        winnerId: winner === "a" ? ctx.match.participantAId : ctx.match.participantBId,
+        winnerId: winner === null ? null : winner === "a" ? ctx.match.participantAId : ctx.match.participantBId,
         scoreA: input.scoreA,
         scoreB: input.scoreB,
         isForfeit: input.isForfeit,

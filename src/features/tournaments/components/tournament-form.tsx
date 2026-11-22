@@ -19,7 +19,7 @@ export interface TournamentFormValues {
   description: string | null;
   rulesText: string | null;
   prizeDescription: string | null;
-  format: "single_elimination" | "double_elimination" | "league";
+  format: "single_elimination" | "double_elimination" | "league" | "swiss";
   participantType: "team" | "solo";
   visibility: "public" | "private";
   region: string | null;
@@ -34,7 +34,10 @@ export interface TournamentFormValues {
   maxSubstitutes: number;
   bestOf: number;
   bestOfFinal: number;
+  swissDeciderBestOf: number;
+  playoffBestOf: number;
   pointsWin: number;
+  pointsDraw: number;
   pointsLoss: number;
   pointsForfeitLoss: number;
   tiebreakers: string[];
@@ -59,6 +62,8 @@ function Section({ title, description, children }: { title: string; description?
 }
 
 const BEST_OF = [1, 3, 5, 7];
+/** En liga cabe el BO2: se juegan las dos partidas y el 1-1 es empate. */
+const LEAGUE_BEST_OF = [1, 2, 3, 5, 7];
 
 export function TournamentForm({ tournament }: { tournament?: TournamentFormValues }) {
   const [state, formAction] = useActionState(tournament ? updateTournamentAction : createTournamentAction, null);
@@ -128,7 +133,7 @@ export function TournamentForm({ tournament }: { tournament?: TournamentFormValu
           <Field label="Formato" error={err("format")}>
             {(p) => (
               <Select {...p} name="format" value={format} disabled={locked} onChange={(e) => setFormat(e.target.value as typeof format)}>
-                {(["single_elimination", "double_elimination", "league"] as const).map((f) => (
+                {(["single_elimination", "double_elimination", "league", "swiss"] as const).map((f) => (
                   <option key={f} value={f}>{label("format", f)}</option>
                 ))}
               </Select>
@@ -149,24 +154,62 @@ export function TournamentForm({ tournament }: { tournament?: TournamentFormValu
               <input type="hidden" name="participantType" value={participantType} />
             </>
           )}
-          <Field label="Series" hint="Al mejor de…" error={err("bestOf")}>
+          <Field
+            label={format === "swiss" ? "Series del suizo" : "Series"}
+            hint={format === "league" ? "BO2: se juegan las dos partidas y el 1-1 es empate." : format === "swiss" ? "Los partidos que no deciden nada (en los Worlds, BO1)." : "Al mejor de…"}
+            error={err("bestOf")}
+          >
             {(p) => (
-              <Select {...p} name="bestOf" defaultValue={tournament?.bestOf ?? 1} disabled={locked}>
-                {BEST_OF.map((b) => (
+              <Select {...p} key={format} name="bestOf" defaultValue={tournament?.format === format ? tournament.bestOf : format === "league" ? 2 : 1} disabled={locked}>
+                {(format === "league" ? LEAGUE_BEST_OF : BEST_OF).map((b) => (
                   <option key={b} value={b}>Bo{b}</option>
                 ))}
               </Select>
             )}
           </Field>
-          <Field label={format === "league" ? "Series (sin uso en liga)" : format === "double_elimination" ? "Gran final" : "Final"} error={err("bestOfFinal")}>
-            {(p) => (
-              <Select {...p} name="bestOfFinal" defaultValue={tournament?.bestOfFinal ?? 3} disabled={locked || format === "league"}>
-                {BEST_OF.map((b) => (
-                  <option key={b} value={b}>Bo{b}</option>
-                ))}
-              </Select>
-            )}
-          </Field>
+          {format !== "league" && (
+            <Field label={format === "double_elimination" ? "Gran final" : "Final"} error={err("bestOfFinal")}>
+              {(p) => (
+                <Select {...p} key={format} name="bestOfFinal" defaultValue={tournament?.format === format ? tournament.bestOfFinal : format === "swiss" ? 5 : 3} disabled={locked}>
+                  {BEST_OF.map((b) => (
+                    <option key={b} value={b}>Bo{b}</option>
+                  ))}
+                </Select>
+              )}
+            </Field>
+          )}
+          {format === "swiss" && (
+            <>
+              <Field label="Partidos decisivos" hint="Quien gana se clasifica o quien pierde queda fuera (en los Worlds, BO3)." error={err("swissDeciderBestOf")}>
+                {(p) => (
+                  <Select {...p} name="swissDeciderBestOf" defaultValue={tournament?.swissDeciderBestOf ?? 3} disabled={locked}>
+                    {BEST_OF.map((b) => (
+                      <option key={b} value={b}>Bo{b}</option>
+                    ))}
+                  </Select>
+                )}
+              </Field>
+              <Field label="Eliminatoria" hint="Cuartos y semifinales con los clasificados." error={err("playoffBestOf")}>
+                {(p) => (
+                  <Select {...p} name="playoffBestOf" defaultValue={tournament?.playoffBestOf ?? 3} disabled={locked}>
+                    {BEST_OF.map((b) => (
+                      <option key={b} value={b}>Bo{b}</option>
+                    ))}
+                  </Select>
+                )}
+              </Field>
+              <p className="text-sm text-ink-3 sm:col-span-2">
+                Como en los Worlds: cada ronda enfrenta a equipos con el mismo balance; con 3 victorias pasas a la eliminatoria y con
+                3 derrotas quedas fuera. Hacen falta al menos 8 participantes y en número par (lo ideal, 16).
+              </p>
+            </>
+          )}
+          {(locked || format !== "swiss") && (
+            <>
+              <input type="hidden" name="swissDeciderBestOf" value={tournament?.swissDeciderBestOf ?? 3} />
+              <input type="hidden" name="playoffBestOf" value={tournament?.playoffBestOf ?? 3} />
+            </>
+          )}
           {locked && (
             <>
               <input type="hidden" name="bestOf" value={tournament?.bestOf} />
@@ -207,7 +250,11 @@ export function TournamentForm({ tournament }: { tournament?: TournamentFormValu
 
         {format === "league" ? (
           <div className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-4">
+            <p className="text-sm text-ink-3">
+              Cada jornada se programa una semana después de la anterior, empezando el día de inicio. Puedes moverlas desde la
+              administración del torneo.
+            </p>
+            <div className="grid gap-4 sm:grid-cols-5">
               <Field label="Vueltas" error={err("leagueLegs")}>
                 {(p) => (
                   <Select {...p} name="leagueLegs" defaultValue={tournament?.leagueLegs ?? 1} disabled={locked}>
@@ -217,6 +264,7 @@ export function TournamentForm({ tournament }: { tournament?: TournamentFormValu
                 )}
               </Field>
               <Field label="Pts. victoria" error={err("pointsWin")}>{(p) => <Input {...p} name="pointsWin" type="number" min={0} max={10} defaultValue={tournament?.pointsWin ?? 3} />}</Field>
+              <Field label="Pts. empate" error={err("pointsDraw")}>{(p) => <Input {...p} name="pointsDraw" type="number" min={-5} max={10} defaultValue={tournament?.pointsDraw ?? 1} />}</Field>
               <Field label="Pts. derrota" error={err("pointsLoss")}>{(p) => <Input {...p} name="pointsLoss" type="number" min={-5} max={10} defaultValue={tournament?.pointsLoss ?? 0} />}</Field>
               <Field label="Pts. incomparecencia" error={err("pointsForfeitLoss")}>
                 {(p) => <Input {...p} name="pointsForfeitLoss" type="number" min={-5} max={10} defaultValue={tournament?.pointsForfeitLoss ?? 0} />}
@@ -242,6 +290,7 @@ export function TournamentForm({ tournament }: { tournament?: TournamentFormValu
           <>
             <input type="hidden" name="leagueLegs" value={tournament?.leagueLegs ?? 1} />
             <input type="hidden" name="pointsWin" value={tournament?.pointsWin ?? 3} />
+            <input type="hidden" name="pointsDraw" value={tournament?.pointsDraw ?? 1} />
             <input type="hidden" name="pointsLoss" value={tournament?.pointsLoss ?? 0} />
             <input type="hidden" name="pointsForfeitLoss" value={tournament?.pointsForfeitLoss ?? 0} />
             {tiebreakers.map((tb) => (

@@ -47,7 +47,7 @@ describe("marcadores de serie", () => {
     expect(checkSeriesScore(3, 1, 1)).toEqual({ ok: false, reason: "not_finished" });
     expect(checkSeriesScore(3, 3, 0)).toEqual({ ok: false, reason: "too_many_games" });
     expect(checkSeriesScore(3, 2, 2)).toEqual({ ok: false, reason: "too_many_games" });
-    expect(checkSeriesScore(2, 1, 0)).toEqual({ ok: false, reason: "invalid" });
+    expect(checkSeriesScore(4, 1, 0)).toEqual({ ok: false, reason: "invalid" });
     expect(checkSeriesScore(3, -1, 2)).toEqual({ ok: false, reason: "invalid" });
   });
 
@@ -66,6 +66,7 @@ describe("marcadores de serie", () => {
 describe("clasificación", () => {
   const rules: StandingsRules = {
     pointsWin: 3,
+    pointsDraw: 1,
     pointsLoss: 0,
     pointsForfeitLoss: -1,
     tiebreakers: ["head_to_head", "game_difference", "games_won"],

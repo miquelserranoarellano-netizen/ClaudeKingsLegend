@@ -30,7 +30,7 @@ const CATEGORIES: { value: TournamentCategory | "all"; label: string }[] = [
   { value: "finished", label: "Finalizados" },
   { value: "cancelled", label: "Cancelados" },
 ];
-const FORMATS = ["single_elimination", "double_elimination", "league"] as const;
+const FORMATS = ["single_elimination", "double_elimination", "league", "swiss"] as const;
 const SORTS: { value: TournamentSort; label: string }[] = [
   { value: "starts_asc", label: "Inicio: próximos" },
   { value: "starts_desc", label: "Inicio: recientes" },

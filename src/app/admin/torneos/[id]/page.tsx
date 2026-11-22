@@ -109,7 +109,7 @@ export default async function ManageTournamentPage({ params, searchParams }: { p
               {phase === "registration_closed" && (
                 <>
                   <p className="text-sm text-ink-2">
-                    Inscripciones cerradas. Al iniciar la competición se generan el {t.format === "league" ? "calendario de jornadas" : "cuadro"} con los {participants.length} participantes aprobados, se cierran las solicitudes pendientes y se avisa a todos.
+                    Inscripciones cerradas. Al iniciar la competición se generan {t.format === "league" ? "el calendario (una jornada por semana)" : t.format === "swiss" ? "la primera ronda del suizo (las siguientes se emparejan solas al cerrarse cada ronda)" : "el cuadro"} con los {participants.length} participantes aprobados, se cierran las solicitudes pendientes y se avisa a todos.
                   </p>
                   {blockers.length > 0 ? (
                     <ul className="list-inside list-disc text-sm text-danger">

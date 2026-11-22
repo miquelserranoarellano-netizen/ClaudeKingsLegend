@@ -15,6 +15,13 @@
       "when": 1795289623618,
       "tag": "0001_supabase_rls_indices",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795346872408,
+      "tag": "0002_suizo_empates_bo2",
+      "breakpoints": true
     }
   ]
 }

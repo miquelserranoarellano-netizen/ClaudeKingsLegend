@@ -18,7 +18,7 @@ creada) y con imagen nueva «gamer». Auditoría completa en `docs/AUDITORIA.md`
 | Equipos (crear, editar, logotipo, invitar, aceptar/rechazar, expulsar, salir, capitanía, disolver, historial) | Hecho |
 | Panel `/dashboard` (resumen, torneos, partidos, equipos, invitaciones, notificaciones, perfil, ajustes) | Hecho |
 | Administración `/admin` (torneos: crear, editar, publicar, cerrar inscripciones, semillas, iniciar, cancelar, eliminar borrador; inscripciones; partidos y horarios; disputas; usuarios; equipos; anuncios; páginas legales; auditoría; ajustes) | Hecho |
-| Motor: eliminación simple y doble (BYE, avance, reinicio de gran final, correcciones seguras), liga (ida/vuelta, puntos y desempates configurables) | Hecho y probado |
+| Motor: eliminación simple y doble (BYE, avance, reinicio de gran final, correcciones seguras), liga (ida/vuelta, una jornada por semana, BO2 con empate y puntos 3/1/0 configurables, desempates) y **sistema suizo como los Worlds** (3 victorias pasan, 3 derrotas eliminan, cruces por balance sin repetir rival, decisivos al BO3 y eliminatoria automática con los clasificados) | Hecho y probado |
 | Inscripciones (fechas, plazas, individual o por equipo, titulares y suplentes, lista de espera con promoción, aprobación manual o automática, Riot ID obligatorio) | Hecho y probado |
 | Notificaciones en la aplicación (+ correo si hay SMTP) | Hecho |
 | SEO (metadatos por página, Open Graph, sitemap, robots, canónicas, noindex en zonas privadas) | Hecho |

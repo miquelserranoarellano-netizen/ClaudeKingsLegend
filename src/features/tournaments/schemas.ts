@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { BEST_OF_VALUES } from "@/domain/competition/series";
+import { BEST_OF_VALUES, DECISIVE_BEST_OF_VALUES } from "@/domain/competition/series";
 import { TIEBREAKERS } from "@/domain/competition/standings";
 import { scheduleProblems } from "@/domain/tournament/phase";
 import { REGIONS } from "@/lib/lol";
@@ -15,7 +15,11 @@ import {
 
 const bestOf = z.coerce
   .number()
-  .refine((v) => (BEST_OF_VALUES as readonly number[]).includes(v), { error: "Elige 1, 3, 5 o 7." });
+  .refine((v) => (BEST_OF_VALUES as readonly number[]).includes(v), { error: "Elige 1, 2, 3, 5 o 7." });
+/** Series que siempre tienen ganador (finales, cuadros y suizo). */
+const decisiveBestOf = z.coerce
+  .number()
+  .refine((v) => (DECISIVE_BEST_OF_VALUES as readonly number[]).includes(v), { error: "Elige 1, 3, 5 o 7." });
 
 export const tournamentSchema = z
   .object({
@@ -24,7 +28,7 @@ export const tournamentSchema = z
     description: optionalText(5000),
     rulesText: optionalText(10000),
     prizeDescription: optionalText(1000),
-    format: z.enum(["single_elimination", "double_elimination", "league"]),
+    format: z.enum(["single_elimination", "double_elimination", "league", "swiss"]),
     participantType: z.enum(["team", "solo"]),
     visibility: z.enum(["public", "private"]),
     region: z
@@ -40,8 +44,12 @@ export const tournamentSchema = z
     teamSize: integer(1, 5),
     maxSubstitutes: integer(0, 5),
     bestOf,
-    bestOfFinal: bestOf,
+    bestOfFinal: decisiveBestOf,
+    // Los formularios antiguos no los envían: valores de los Worlds por defecto.
+    swissDeciderBestOf: decisiveBestOf.default(3),
+    playoffBestOf: decisiveBestOf.default(3),
     pointsWin: integer(0, 10),
+    pointsDraw: integer(-5, 10).default(1),
     pointsLoss: integer(-5, 10),
     pointsForfeitLoss: integer(-5, 10),
     tiebreakers: z
@@ -66,6 +74,15 @@ export const tournamentSchema = z
     for (const problem of problems) {
       const [path, message] = messages[problem];
       ctx.addIssue({ code: "custom", path: [path], message });
+    }
+    if (value.bestOf % 2 === 0 && value.format !== "league") {
+      ctx.addIssue({ code: "custom", path: ["bestOf"], message: "El BO2 (con empate) solo vale para ligas: en un cuadro o en el suizo alguien tiene que pasar." });
+    }
+    if (value.format === "swiss" && value.minParticipants < 8) {
+      ctx.addIssue({ code: "custom", path: ["minParticipants"], message: "El sistema suizo necesita al menos 8 participantes (como los Worlds, 16)." });
+    }
+    if (value.pointsDraw > value.pointsWin || value.pointsDraw < value.pointsLoss) {
+      ctx.addIssue({ code: "custom", path: ["pointsDraw"], message: "El empate debe valer entre la derrota y la victoria." });
     }
     if (value.pointsWin <= value.pointsLoss) {
       ctx.addIssue({ code: "custom", path: ["pointsWin"], message: "La victoria debe valer más que la derrota." });

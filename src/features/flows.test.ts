@@ -11,15 +11,17 @@ import {
   teamMembers,
   tournamentParticipants,
   tournamentRegistrations,
+  tournamentRounds,
   tournaments,
+  tournamentStages,
 } from "@/server/db/schema";
 import { AppError } from "@/server/errors";
 import { correctResult, openDispute, reportResult, resolveDispute, scheduleMatch, validateResult } from "./matches/service";
 import { registerTeam, reviewRegistration, withdrawRegistration } from "./registrations/service";
 import { createTeam, inviteMember, removeMember, respondInvitation } from "./teams/service";
 import { cancelTournament, closeRegistrations, createTournament, publishTournament, startTournament, updateTournament } from "./tournaments/service";
-import type { TournamentInput } from "./tournaments/schemas";
-import { getLeagueStandings } from "./tournaments/queries";
+import { type TournamentInput, tournamentSchema } from "./tournaments/schemas";
+import { getLeagueStandings, getSwissStandings } from "./tournaments/queries";
 
 let db: Db;
 let organizer: CurrentUser;
@@ -62,7 +64,10 @@ function tournamentInput(overrides: Partial<TournamentInput> = {}): TournamentIn
     maxSubstitutes: 1,
     bestOf: 1,
     bestOfFinal: 3,
+    swissDeciderBestOf: 3,
+    playoffBestOf: 3,
     pointsWin: 3,
+    pointsDraw: 1,
     pointsLoss: 0,
     pointsForfeitLoss: 0,
     tiebreakers: ["head_to_head", "game_difference"],
@@ -440,6 +445,153 @@ describe("liga", () => {
     expect(row?.status).toBe("completed");
   });
 });
+
+describe("liga semanal con BO2 y empates", () => {
+  it("programa una jornada por semana, admite el 1-1 y lo puntúa como en el fútbol", async () => {
+    const { t } = await startedTournamentWith(4, { format: "league", bestOf: 2, pointsWin: 3, pointsDraw: 1, pointsLoss: 0, minParticipants: 4 });
+    const all = await loadMatches(t.id);
+    const [tournament] = await db.select().from(tournaments).where(eq(tournaments.id, t.id));
+    const rounds = await db.select().from(tournamentRounds).where(eq(tournamentRounds.tournamentId, t.id));
+    const roundOf = new Map(rounds.map((r) => [r.id, r.number]));
+    // Jornada n: inicio + (n - 1) semanas.
+    for (const m of all) {
+      const expected = tournament!.startsAt.getTime() + (roundOf.get(m.roundId)! - 1) * 7 * 24 * 60 * 60 * 1000;
+      expect(m.scheduledAt?.getTime()).toBe(expected);
+      expect(m.status).toBe("scheduled");
+      expect(m.bestOf).toBe(2);
+    }
+
+    const manual = (a: number, b: number) => ({ scoreA: a, scoreB: b, isForfeit: false, gameWinners: null, mvpUserId: null, notes: null });
+    // En un BO2 se juegan las dos partidas: 1-0 no cierra la serie.
+    await expectAppError(validateResult(organizer, { matchId: all[0]!.id, version: all[0]!.version, manual: manual(1, 0) }), "errors.invalidScoreDraw");
+    await validateResult(organizer, { matchId: all[0]!.id, version: all[0]!.version, manual: manual(1, 1) });
+    const [draw] = await db.select().from(matches).where(eq(matches.id, all[0]!.id));
+    expect(draw?.status).toBe("confirmed");
+    expect(draw?.winnerId).toBeNull();
+
+    const table = await getLeagueStandings(t.id);
+    const drawn = table.filter((r) => r.draws === 1);
+    expect(drawn).toHaveLength(2);
+    expect(drawn.every((r) => r.points === 1)).toBe(true);
+
+    // Una corrección puede convertir el empate en victoria.
+    await correctResult(organizer, { matchId: draw!.id, version: draw!.version, ...manual(2, 0), reason: "Captura mal leída" });
+    const after = await getLeagueStandings(t.id);
+    expect(after.reduce((sum, r) => sum + r.points, 0)).toBe(3);
+  });
+
+  it("el BO2 solo vale para ligas", async () => {
+    await expect(Promise.resolve(tournamentSchema.safeParse({ ...rawForm(), format: "single_elimination", bestOf: "2" }).success)).resolves.toBe(false);
+    await expect(Promise.resolve(tournamentSchema.safeParse({ ...rawForm(), format: "league", bestOf: "2" }).success)).resolves.toBe(true);
+  });
+});
+
+describe("sistema suizo", () => {
+  it("16 equipos: rondas por balance, decisivos al BO3, eliminatoria con los 8 clasificados y campeón", async () => {
+    const { t } = await startedTournamentWith(16, { format: "swiss", bestOf: 1, swissDeciderBestOf: 3, playoffBestOf: 3, bestOfFinal: 5, minParticipants: 8, maxParticipants: 16 });
+    const manual = (a: number, b: number) => ({ scoreA: a, scoreB: b, isForfeit: false, gameWinners: null, mvpUserId: null, notes: null });
+    const winScore = (bestOf: number) => (bestOf === 1 ? [1, 0] : bestOf === 3 ? [2, 0] : [3, 0]) as [number, number];
+
+    const played = new Set<string>();
+    for (let round = 1; round <= 5; round++) {
+      const open = (await loadMatches(t.id)).filter((m) => m.status !== "confirmed" && m.status !== "void");
+      const swissRounds = await db.select().from(tournamentRounds).where(and(eq(tournamentRounds.tournamentId, t.id), eq(tournamentRounds.bracket, "swiss")));
+      if (open.length === 0 || !swissRounds.some((r) => r.number === round)) break;
+      const roundId = swissRounds.find((r) => r.number === round)!.id;
+      const current = open.filter((m) => m.roundId === roundId);
+      expect(current.length).toBeGreaterThan(0);
+      // Ronda 3: los 2-0 y los 0-2 se juegan al BO3; los 1-1, al BO1.
+      if (round === 3) expect(current.map((m) => m.bestOf).sort()).toEqual([1, 1, 1, 1, 3, 3, 3, 3]);
+      if (round >= 4) expect(current.every((m) => m.bestOf === 3)).toBe(true);
+      for (const m of current) {
+        const key = [m.participantAId, m.participantBId].sort().join("|");
+        expect(played.has(key)).toBe(false);
+        played.add(key);
+        // Siempre gana el participante A.
+        const [a, b] = winScore(m.bestOf);
+        await validateResult(organizer, { matchId: m.id, version: m.version, manual: manual(a, b) });
+      }
+    }
+
+    const table = await getSwissStandings(t.id);
+    expect(table.filter((r) => r.status === "advanced")).toHaveLength(8);
+    expect(table.filter((r) => r.status === "eliminated")).toHaveLength(8);
+    const playoffRounds = await db.select().from(tournamentRounds).where(and(eq(tournamentRounds.tournamentId, t.id), eq(tournamentRounds.bracket, "winners")));
+    expect(playoffRounds).toHaveLength(3);
+    expect(playoffRounds.find((r) => r.number === 3)!.bestOf).toBe(5);
+    expect(playoffRounds.find((r) => r.number === 1)!.bestOf).toBe(3);
+    const advanced = new Set(table.filter((r) => r.status === "advanced").map((r) => r.participantId));
+    const quarterIds = (await loadMatches(t.id)).filter((m) => m.roundId === playoffRounds.find((r) => r.number === 1)!.id).flatMap((m) => [m.participantAId, m.participantBId]);
+    expect(new Set(quarterIds)).toEqual(advanced);
+
+    // La eliminatoria hasta la final.
+    for (let i = 0; i < 7; i++) {
+      const next = (await loadMatches(t.id)).find((m) => playoffRounds.some((r) => r.id === m.roundId) && m.status !== "confirmed" && m.participantAId && m.participantBId);
+      if (!next) break;
+      const [a, b] = winScore(next.bestOf);
+      await validateResult(organizer, { matchId: next.id, version: next.version, manual: manual(a, b) });
+    }
+    const [done] = await db.select().from(tournaments).where(eq(tournaments.id, t.id));
+    expect(done?.status).toBe("completed");
+    const [completedStage] = await db.select().from(tournamentStages).where(and(eq(tournamentStages.tournamentId, t.id), eq(tournamentStages.number, 1)));
+    expect(completedStage?.status).toBe("completed");
+  });
+
+  it("no empieza con un número impar ni con menos de 8", async () => {
+    const t = await publishedTournament({ format: "swiss", minParticipants: 8, maxParticipants: 16 });
+    for (let i = 0; i < 9; i++) {
+      const entrant = await makeTeam(`S${Math.random().toString(36).slice(2, 6)}`);
+      await registerTeam(entrant.captain, { tournamentId: t.id, teamId: entrant.team.id, roster: [{ userId: entrant.captain.id, isSubstitute: false }], note: null, accessCode: null });
+    }
+    await closeRegistrations(organizer, t.id);
+    await expectAppError(startTournament(organizer, t.id), "errors.swissParticipants");
+  });
+
+  it("solo se corrigen resultados de la ronda en juego", async () => {
+    const { t } = await startedTournamentWith(8, { format: "swiss", minParticipants: 8, maxParticipants: 8 });
+    const manual = (a: number, b: number) => ({ scoreA: a, scoreB: b, isForfeit: false, gameWinners: null, mvpUserId: null, notes: null });
+    const first = await loadMatches(t.id);
+    for (const m of first) await validateResult(organizer, { matchId: m.id, version: m.version, manual: manual(1, 0) });
+    // La ronda 1 está cerrada y la 2 emparejada: ya no se puede tocar la 1.
+    const [old] = await db.select().from(matches).where(eq(matches.id, first[0]!.id));
+    await expectAppError(correctResult(organizer, { matchId: old!.id, version: old!.version, ...manual(0, 1), reason: "Error" }), "errors.swissCorrectionBlocked");
+    // En la ronda 2, con partidos aún abiertos, sí.
+    const second = (await loadMatches(t.id)).filter((m) => m.status !== "confirmed");
+    await validateResult(organizer, { matchId: second[0]!.id, version: second[0]!.version, manual: manual(1, 0) });
+    const [fresh] = await db.select().from(matches).where(eq(matches.id, second[0]!.id));
+    await correctResult(organizer, { matchId: fresh!.id, version: fresh!.version, ...manual(0, 1), reason: "Captura mal leída" });
+    const [corrected] = await db.select().from(matches).where(eq(matches.id, fresh!.id));
+    expect(corrected?.winnerId).toBe(corrected?.participantBId);
+  });
+});
+
+/** Datos de formulario tal y como llegan del navegador (cadenas), para probar el esquema. */
+function rawForm() {
+  const now = Date.now();
+  const local = (ms: number) => new Date(ms).toISOString().slice(0, 16);
+  return {
+    name: "Copa de prueba",
+    format: "league",
+    participantType: "team",
+    visibility: "public",
+    region: "EUW",
+    registrationOpensAt: local(now + HOUR),
+    registrationClosesAt: local(now + 24 * HOUR),
+    startsAt: local(now + 48 * HOUR),
+    minParticipants: "4",
+    maxParticipants: "8",
+    teamSize: "5",
+    maxSubstitutes: "1",
+    bestOf: "1",
+    bestOfFinal: "3",
+    pointsWin: "3",
+    pointsDraw: "1",
+    pointsLoss: "0",
+    pointsForfeitLoss: "0",
+    leagueLegs: "1",
+    approvalMode: "manual",
+  };
+}
 
 async function captainOf(participantId: string, entrants: { captain: CurrentUser; team: { id: string } }[]) {
   const [p] = await db.select().from(tournamentParticipants).where(eq(tournamentParticipants.id, participantId));

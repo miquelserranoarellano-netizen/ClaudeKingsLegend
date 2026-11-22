@@ -23,10 +23,12 @@ export const invitationStatus = pgEnum("invitation_status", [
   "expired",
 ]);
 
+/** `swiss`: fase suiza como la de los Worlds y, después, eliminatoria con los clasificados. */
 export const tournamentFormat = pgEnum("tournament_format", [
   "single_elimination",
   "double_elimination",
   "league",
+  "swiss",
 ]);
 
 export const participantType = pgEnum("participant_type", ["team", "solo"]);
@@ -59,7 +61,7 @@ export const participantStatus = pgEnum("participant_status", ["active", "disqua
 
 export const stageStatus = pgEnum("stage_status", ["in_progress", "completed"]);
 
-export const bracketKind = pgEnum("bracket_kind", ["winners", "losers", "grand_final", "league"]);
+export const bracketKind = pgEnum("bracket_kind", ["winners", "losers", "grand_final", "league", "swiss"]);
 
 export const matchSide = pgEnum("match_side", ["a", "b"]);
 

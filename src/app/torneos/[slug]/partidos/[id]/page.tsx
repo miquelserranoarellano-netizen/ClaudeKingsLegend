@@ -138,6 +138,7 @@ export default async function MatchPage({ params, searchParams }: { params: Prom
           <span className="flex items-center gap-2">
             {t.isDemo && <DemoBadge />}
             {m.isBye ? <Badge>BYE</Badge> : <MatchStatusBadge status={m.status} />}
+            {decided && !m.isBye && !m.winnerId && <Badge tone="brand">Empate</Badge>}
           </span>
         </div>
         <div className="flex items-center gap-2 px-3 py-8 sm:gap-4 sm:px-8">

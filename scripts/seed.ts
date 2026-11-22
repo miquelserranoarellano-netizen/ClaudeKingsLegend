@@ -79,7 +79,10 @@ function tournamentInput(overrides: Partial<TournamentInput> & Pick<TournamentIn
     maxSubstitutes: 1,
     bestOf: 1,
     bestOfFinal: 3,
+    swissDeciderBestOf: 3,
+    playoffBestOf: 3,
     pointsWin: 3,
+    pointsDraw: 1,
     pointsLoss: 0,
     pointsForfeitLoss: 0,
     tiebreakers: ["head_to_head", "game_difference", "games_won"],
@@ -110,12 +113,24 @@ async function playMatches(db: Db, organizer: CurrentUser, tournamentId: string,
     const needed = Math.floor(playable.bestOf / 2) + 1;
     const loserGames = Math.floor(next() * needed);
     const aWins = next() < 0.55;
+    // BO2: se juegan las dos partidas (2-0, 0-2 o 1-1 de empate).
+    const draw = playable.bestOf % 2 === 0 && next() < 0.3;
+    const [scoreA, scoreB] =
+      playable.bestOf % 2 === 0
+        ? draw
+          ? [playable.bestOf / 2, playable.bestOf / 2]
+          : aWins
+            ? [playable.bestOf, 0]
+            : [0, playable.bestOf]
+        : aWins
+          ? [needed, loserGames]
+          : [loserGames, needed];
     await validateResult(organizer, {
       matchId: playable.id,
       version: playable.version,
       manual: {
-        scoreA: aWins ? needed : loserGames,
-        scoreB: aWins ? loserGames : needed,
+        scoreA,
+        scoreB,
         isForfeit: false,
         gameWinners: null,
         mvpUserId: null,
@@ -206,13 +221,39 @@ async function main() {
   console.log("Liga en curso (6 equipos)…");
   const league = await createTournament(
     organizer,
-    tournamentInput({ name: "Liga Invierno", summary: "Todos contra todos a una vuelta. Puntúa cada victoria.", format: "league", maxSubstitutes: 0, maxParticipants: 6 }),
+    tournamentInput({
+      name: "Liga Invierno",
+      summary: "Una jornada por semana, BO2: victoria 3 puntos, empate 1, derrota 0.",
+      format: "league",
+      bestOf: 2,
+      maxSubstitutes: 0,
+      maxParticipants: 6,
+    }),
   );
   await publishTournament(organizer, league.id);
   await register(league.id, createdTeams.slice(0, 6));
   await closeRegistrations(organizer, league.id);
   await startTournament(organizer, league.id);
   await playMatches(db, organizer, league.id, 9, 11);
+
+  console.log("Suizo en curso (8 equipos, como los Worlds)…");
+  const swiss = await createTournament(
+    organizer,
+    tournamentInput({
+      name: "Suizo de Campeones",
+      summary: "Sistema suizo como los Worlds: con 3 victorias pasas, con 3 derrotas quedas fuera.",
+      format: "swiss",
+      maxSubstitutes: 0,
+      minParticipants: 8,
+      maxParticipants: 8,
+      bestOfFinal: 5,
+    }),
+  );
+  await publishTournament(organizer, swiss.id);
+  await register(swiss.id, createdTeams);
+  await closeRegistrations(organizer, swiss.id);
+  await startTournament(organizer, swiss.id);
+  await playMatches(db, organizer, swiss.id, 10, 5);
 
   console.log("Torneo terminado (doble eliminación, 5 equipos)…");
   const de = await createTournament(

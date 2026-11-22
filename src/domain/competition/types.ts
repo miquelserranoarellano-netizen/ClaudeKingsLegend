@@ -6,7 +6,8 @@
 export type Side = "a" | "b";
 
 /** Cuadro al que pertenece un partido. */
-export type BracketKind = "winners" | "losers" | "grand_final" | "league";
+/** `swiss`: rondas de la fase suiza (los cruces se generan ronda a ronda). */
+export type BracketKind = "winners" | "losers" | "grand_final" | "league" | "swiss";
 
 /** Hueco de un partido al que va a parar un participante. */
 export interface SlotRef {
@@ -35,6 +36,7 @@ export interface EngineMatch {
   aDead: boolean;
   bDead: boolean;
   status: EngineStatus;
+  /** Bando ganador. `null` con `status: "done"` es un empate (solo en ligas con series de número par). */
   winner: Side | null;
   /** Ganado sin jugar porque el rival es un BYE. */
   isBye: boolean;

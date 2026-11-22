@@ -95,11 +95,16 @@ export const tournamentRules = pgTable(
     /** Titulares por equipo (5 en la Grieta del Invocador). */
     teamSize: integer("team_size").notNull().default(5),
     maxSubstitutes: integer("max_substitutes").notNull().default(2),
-    /** Formato de serie general y de la final (o gran final). */
+    /** Formato de serie general y de la final (o gran final). En liga, 2 = BO2 (se juegan dos partidas y cabe el empate). */
     bestOf: integer("best_of").notNull().default(1),
     bestOfFinal: integer("best_of_final").notNull().default(3),
-    /** Liga: puntos por victoria, por derrota y por derrota por incomparecencia. */
+    /** Suizo: series de los partidos decisivos (quien gana se clasifica o quien pierde queda fuera). */
+    swissDeciderBestOf: integer("swiss_decider_best_of").notNull().default(3),
+    /** Suizo: series de la eliminatoria final (salvo la final, que usa `bestOfFinal`). */
+    playoffBestOf: integer("playoff_best_of").notNull().default(3),
+    /** Liga: puntos por victoria, por empate, por derrota y por derrota por incomparecencia. */
     pointsWin: integer("points_win").notNull().default(3),
+    pointsDraw: integer("points_draw").notNull().default(1),
     pointsLoss: integer("points_loss").notNull().default(0),
     pointsForfeitLoss: integer("points_forfeit_loss").notNull().default(0),
     /** Liga: desempates en orden (ver `src/domain/competition/standings.ts`). */
@@ -120,9 +125,15 @@ export const tournamentRules = pgTable(
   (t) => [
     check("rules_team_size_ck", sql`${t.teamSize} between 1 and 5`),
     check("rules_subs_ck", sql`${t.maxSubstitutes} between 0 and 5`),
-    check("rules_best_of_ck", sql`${t.bestOf} in (1, 3, 5, 7) and ${t.bestOfFinal} in (1, 3, 5, 7)`),
+    check(
+      "rules_best_of_ck",
+      sql`${t.bestOf} in (1, 2, 3, 5, 7) and ${t.bestOfFinal} in (1, 3, 5, 7) and ${t.swissDeciderBestOf} in (1, 3, 5, 7) and ${t.playoffBestOf} in (1, 3, 5, 7)`,
+    ),
     check("rules_legs_ck", sql`${t.leagueLegs} in (1, 2)`),
-    check("rules_points_ck", sql`${t.pointsWin} > ${t.pointsLoss} and ${t.pointsLoss} >= ${t.pointsForfeitLoss}`),
+    check(
+      "rules_points_ck",
+      sql`${t.pointsWin} > ${t.pointsLoss} and ${t.pointsWin} >= ${t.pointsDraw} and ${t.pointsDraw} >= ${t.pointsLoss} and ${t.pointsLoss} >= ${t.pointsForfeitLoss}`,
+    ),
   ],
 ).enableRLS();
 

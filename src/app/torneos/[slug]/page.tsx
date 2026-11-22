@@ -13,8 +13,9 @@ import { Bracket } from "@/features/tournaments/components/bracket";
 import { RegistrationPanel } from "@/features/tournaments/components/registration-panel";
 import { Schedule } from "@/features/tournaments/components/schedule";
 import { StandingsTable } from "@/features/tournaments/components/standings-table";
+import { SwissView } from "@/features/tournaments/components/swiss-view";
 import { TournamentBanner } from "@/features/tournaments/components/tournament-banner";
-import { getChampion, getCompetition, getLeagueStandings, getParticipants, getTournamentDetail } from "@/features/tournaments/queries";
+import { getChampion, getCompetition, getLeagueStandings, getParticipants, getSwissStandings, getTournamentDetail } from "@/features/tournaments/queries";
 import { label } from "@/i18n";
 import { cn } from "@/lib/cn";
 import { formatDate, formatDateTime } from "@/lib/format";
@@ -58,12 +59,13 @@ export default async function TournamentPage({ params, searchParams }: { params:
   const competitionTab = t.format === "league" ? "Clasificación" : "Cuadro";
   const tab: Tab = (TABS as readonly string[]).includes(search.vista ?? "") ? (search.vista as Tab) : "resumen";
 
-  const [participants, rounds, champion, announcements, standings] = await Promise.all([
+  const [participants, rounds, champion, announcements, standings, swissTable] = await Promise.all([
     getParticipants(t.id),
     started ? getCompetition(t.id, t.format) : Promise.resolve([]),
     getChampion(t),
     listPublishedAnnouncements({ tournamentId: t.id, pageSize: 5 }),
     started && t.format === "league" ? getLeagueStandings(t.id) : Promise.resolve([]),
+    started && t.format === "swiss" ? getSwissStandings(t.id) : Promise.resolve([]),
   ]);
   const tabHref = (value: Tab) => {
     const q = new URLSearchParams();
@@ -260,8 +262,24 @@ export default async function TournamentPage({ params, searchParams }: { params:
               <StandingsTable
                 rows={standings}
                 tiebreakers={rules.tiebreakers}
-                points={{ win: rules.pointsWin, loss: rules.pointsLoss, forfeitLoss: rules.pointsForfeitLoss }}
+                points={{ win: rules.pointsWin, draw: rules.bestOf % 2 === 0 ? rules.pointsDraw : undefined, loss: rules.pointsLoss, forfeitLoss: rules.pointsForfeitLoss }}
               />
+            ) : t.format === "swiss" ? (
+              <div className="space-y-10">
+                <SwissView standings={swissTable} rounds={rounds} slug={t.slug} />
+                <section aria-labelledby="eliminatoria" className="space-y-3">
+                  <h2 id="eliminatoria" className="font-display text-xl font-bold tracking-[0.06em] uppercase">
+                    Eliminatoria
+                  </h2>
+                  {rounds.some((r) => r.bracket === "winners") ? (
+                    <Bracket rounds={rounds} slug={t.slug} />
+                  ) : (
+                    <p className="rounded-card border border-dashed border-line-strong bg-surface px-5 py-6 text-sm text-ink-3">
+                      Se genera sola cuando termina el suizo, con los clasificados sembrados por su balance (los 3-0 primero).
+                    </p>
+                  )}
+                </section>
+              </div>
             ) : (
               <Bracket rounds={rounds} slug={t.slug} />
             ))}
@@ -273,7 +291,16 @@ export default async function TournamentPage({ params, searchParams }: { params:
                 <CardBody>
                   <ul className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
                     <li><span className="text-ink-3">Formato:</span> {label("format", t.format)}</li>
-                    <li><span className="text-ink-3">Series:</span> al mejor de {rules.bestOf}; {t.format === "league" ? "todas las jornadas" : `final al mejor de ${rules.bestOfFinal}`}</li>
+                    <li>
+                      <span className="text-ink-3">Series:</span>{" "}
+                      {t.format === "league"
+                        ? rules.bestOf % 2 === 0
+                          ? `BO${rules.bestOf}: se juegan todas las partidas y cabe el empate`
+                          : `al mejor de ${rules.bestOf} en todas las jornadas`
+                        : t.format === "swiss"
+                          ? `suizo al mejor de ${rules.bestOf} (decisivos al mejor de ${rules.swissDeciderBestOf}); eliminatoria al mejor de ${rules.playoffBestOf} y final al mejor de ${rules.bestOfFinal}`
+                          : `al mejor de ${rules.bestOf}; final al mejor de ${rules.bestOfFinal}`}
+                    </li>
                     {t.participantType === "team" && (
                       <li><span className="text-ink-3">Plantilla:</span> {rules.teamSize} titulares y hasta {rules.maxSubstitutes} suplentes</li>
                     )}
@@ -291,13 +318,24 @@ export default async function TournamentPage({ params, searchParams }: { params:
                     {t.format === "league" && (
                       <>
                         <li><span className="text-ink-3">Vueltas:</span> {rules.leagueLegs === 2 ? "ida y vuelta" : "solo ida"}</li>
-                        <li><span className="text-ink-3">Puntos:</span> victoria {rules.pointsWin}, derrota {rules.pointsLoss}, incomparecencia {rules.pointsForfeitLoss}</li>
+                        <li>
+                          <span className="text-ink-3">Puntos:</span> victoria {rules.pointsWin}
+                          {rules.bestOf % 2 === 0 ? `, empate ${rules.pointsDraw}` : ""}, derrota {rules.pointsLoss}, incomparecencia {rules.pointsForfeitLoss}
+                        </li>
+                        <li><span className="text-ink-3">Calendario:</span> una jornada por semana desde el inicio</li>
                         <li className="sm:col-span-2">
                           <span className="text-ink-3">Desempates (en orden):</span>{" "}
                           {rules.tiebreakers.map((tb) => label("tiebreaker", tb as "wins")).join(" → ") || "ninguno"} → semilla. Si un criterio
                           solo deshace el empate en parte, al grupo que sigue empatado se le aplican de nuevo desde el primero.
                         </li>
                       </>
+                    )}
+                    {t.format === "swiss" && (
+                      <li className="sm:col-span-2">
+                        <span className="text-ink-3">Sistema suizo:</span> como en los Worlds. Cada ronda enfrenta a equipos con el mismo balance,
+                        sin repetir rival; con 3 victorias se pasa a la eliminatoria y con 3 derrotas se queda fuera. Los clasificados se
+                        siembran por balance (3-0, 3-1, 3-2) y por la fuerza de su calendario.
+                      </li>
                     )}
                     {t.format !== "league" && (
                       <li className="sm:col-span-2">

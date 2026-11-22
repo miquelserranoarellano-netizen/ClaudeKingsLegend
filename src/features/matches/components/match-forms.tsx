@@ -79,7 +79,11 @@ export function ScoreForm({ mode, matchId, version, bestOf, names, players, init
       <input type="hidden" name="matchId" value={matchId} />
       {mode !== "report" && <input type="hidden" name="version" value={version} />}
       <fieldset>
-        <legend className="mb-2 text-sm font-semibold">Marcador (al mejor de {bestOf}: gana quien llega a {needed})</legend>
+        <legend className="mb-2 text-sm font-semibold">
+          {bestOf % 2 === 0
+            ? `Marcador (BO${bestOf}: se juegan las ${bestOf} partidas; ${bestOf / 2}-${bestOf / 2} es empate)`
+            : `Marcador (al mejor de ${bestOf}: gana quien llega a ${needed})`}
+        </legend>
         <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-3">
           <Field label={names.a} error={fieldError(state, "scoreA")}>
             {(p) => (

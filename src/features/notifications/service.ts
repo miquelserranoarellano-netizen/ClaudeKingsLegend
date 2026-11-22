@@ -23,6 +23,8 @@ export type NotificationType =
   | "registrationWaitlisted"
   | "registrationPending"
   | "tournamentStarted"
+  | "swissNextRound"
+  | "swissPlayoffs"
   | "tournamentCancelled"
   | "matchScheduled"
   | "matchRescheduled"
