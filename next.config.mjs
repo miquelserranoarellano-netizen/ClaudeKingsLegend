@@ -32,7 +32,9 @@ const csp = [
 const nextConfig = {
   // PGlite (Postgres embebido) y `pg` cargan binarios y WASM propios: no deben empaquetarse. En Cloudflare
   // PGlite no se usa: se sustituye por un módulo vacío para no meter su WASM en el Worker.
-  serverExternalPackages: forCloudflare ? ["pg"] : ["@electric-sql/pglite", "pg"],
+  // `worker-mailer` (SMTP en Workers) usa `cloudflare:sockets`: Next no lo empaqueta; en Cloudflare lo hace
+  // OpenNext y en Node no se carga nunca.
+  serverExternalPackages: forCloudflare ? ["pg", "worker-mailer"] : ["@electric-sql/pglite", "pg", "worker-mailer"],
   turbopack: {
     // Hay otro package-lock.json más arriba (C:\Users\mique); se fija la raíz para que Turbopack no dude.
     root: projectRoot,

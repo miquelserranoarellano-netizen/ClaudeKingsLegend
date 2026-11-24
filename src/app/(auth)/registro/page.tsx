@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AuthShell } from "@/features/auth/components/auth-shell";
+import { AuthDivider, GoogleButton } from "@/features/auth/components/google-button";
 import { SignUpForm } from "@/features/auth/components/sign-up-form";
 import { safeNext } from "@/lib/safe-redirect";
+import { isGoogleConfigured } from "@/server/auth/google";
 import { getCurrentUser } from "@/server/auth/session";
 import { isMailConfigured } from "@/server/mail";
 
@@ -25,6 +27,12 @@ export default async function SignUpPage({ searchParams }: { searchParams: Promi
         </>
       }
     >
+      {isGoogleConfigured() && (
+        <>
+          <GoogleButton next={next} label="Registrarte con Google" />
+          <AuthDivider text="o con tu correo y una contraseña" />
+        </>
+      )}
       <SignUpForm next={next} verificationRequired={isMailConfigured()} />
     </AuthShell>
   );

@@ -8,6 +8,7 @@ import { getLongLivedDb, isCloudflareWorker, type Db } from "../db/client";
 import { accounts, sessions, users, verifications } from "../db/schema";
 import { isMailConfigured, sendMail } from "../mail";
 import { consumeRateLimit } from "../rate-limit";
+import { googleProvider } from "./google";
 import { ensureProfile } from "./profile-bootstrap";
 import { PASSWORD_MAX, PASSWORD_MIN } from "@/lib/auth-rules";
 import { siteUrl } from "@/lib/site";
@@ -15,6 +16,8 @@ import { siteUrl } from "@/lib/site";
 /**
  * Autenticación con Better Auth (sucesor mantenido de Auth.js):
  * - Correo y contraseña, con hash scrypt; la contraseña nunca se guarda ni se registra en claro.
+ * - Entrar con Google (si está configurado). Si el correo de Google ya tiene cuenta, se enlaza a ella:
+ *   Google solo entrega correos verificados.
  * - Sesiones en la base de datos; el navegador solo guarda un token aleatorio en una cookie HttpOnly,
  *   Secure en producción y SameSite=Lax. Comprobación de origen (CSRF) en todas las peticiones.
  * - Verificación del correo y recuperación de contraseña cuando hay SMTP configurado.
@@ -71,6 +74,13 @@ function createAuth(db: Db) {
         });
       },
     },
+    socialProviders: googleProvider() ? { google: googleProvider()! } : {},
+    account: {
+      accountLinking: { enabled: true, trustedProviders: ["google"] },
+    },
+    // Los errores de la vuelta de Google que no traen su propia dirección (enlace caducado, `state` que no
+    // cuadra…) acaban en la página de acceso, con su mensaje en español, y no en la página en inglés de Better Auth.
+    onAPIError: { errorURL: "/acceso" },
     session: {
       expiresIn: 60 * 60 * 24 * 30,
       updateAge: 60 * 60 * 24,
@@ -82,6 +92,7 @@ function createAuth(db: Db) {
       max: 100,
       customRules: {
         "/sign-in/email": { window: 300, max: 10 },
+        "/sign-in/social": { window: 300, max: 20 },
         "/sign-up/email": { window: 3600, max: 5 },
         "/request-password-reset": { window: 3600, max: 5 },
         "/send-verification-email": { window: 3600, max: 5 },

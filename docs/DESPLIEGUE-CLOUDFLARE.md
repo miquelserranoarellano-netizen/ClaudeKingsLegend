@@ -81,8 +81,14 @@ Cloudflare → *Workers & Pages* → **claudekingslegend** → *Settings*.
 | Nombre | Tipo | Valor |
 | --- | --- | --- |
 | `BETTER_AUTH_SECRET` | **Secret** | 48 caracteres aleatorios. Genera uno con `openssl rand -base64 48` o en un gestor de contraseñas. Si lo cambias, se cierran todas las sesiones. |
-| `MAIL_FROM` | Text (opcional) | `Kings Legend <no-responder@tu-dominio>` |
-| `RESEND_API_KEY` | **Secret** (opcional) | Clave de [Resend](https://resend.com) para enviar correos (ver paso 6). |
+| `MAIL_FROM` | Text (opcional) | Remitente de los correos: `Kings Legend <tu-cuenta@gmail.com>` con Gmail, o una dirección de tu dominio con Resend (paso 6). |
+| `SMTP_HOST` | Text (opcional) | `smtp.gmail.com` (correo con Gmail, paso 6). |
+| `SMTP_PORT` | Text (opcional) | `465` |
+| `SMTP_USER` | Text (opcional) | Tu dirección de Gmail completa. |
+| `SMTP_PASSWORD` | **Secret** (opcional) | La *contraseña de aplicación* de Gmail (16 letras, paso 6). Nunca la contraseña normal de tu cuenta. |
+| `RESEND_API_KEY` | **Secret** (opcional) | Clave de [Resend](https://resend.com), si usas Resend en lugar de Gmail (paso 6). |
+| `GOOGLE_CLIENT_ID` | Text (opcional) | ID de cliente OAuth de Google, para «Continuar con Google» (paso 6 bis). |
+| `GOOGLE_CLIENT_SECRET` | **Secret** (opcional) | Secreto de ese cliente OAuth. |
 
 `wrangler.jsonc` lleva `keep_vars: true`: un despliegue no borra lo que configures en el panel.
 
@@ -122,15 +128,65 @@ Los cambios están en la rama `claude/great-cannon-uadmuu`. Cloudflare despliega
 
 ## 6. Correo (recomendado)
 
-Sin correo la web funciona, pero no hay verificación de cuentas ni **recuperación de contraseña**. En
-Cloudflare usa **Resend** (API HTTP; el envío SMTP no es fiable desde un Worker):
+Sin correo la web funciona, pero no hay verificación de cuentas ni **recuperación de contraseña** (la página
+«¿Has olvidado la contraseña?» dice que no está disponible). Hay dos formas; con las dos el correo lleva un
+enlace para elegir una contraseña nueva que caduca en 1 hora y sirve una sola vez.
+
+### Opción A: una cuenta de Gmail (gratis, sin dominio propio)
+
+El Worker envía por SMTP con la cuenta de Gmail (sockets TCP de Cloudflare, paquete `worker-mailer`). Lo
+mejor es crear una cuenta de Gmail solo para la liga (p. ej. `kingslegend.liga@gmail.com`).
+
+1. En esa cuenta de Google activa la **verificación en dos pasos** (myaccount.google.com → *Seguridad*).
+   Sin ella Google no deja crear contraseñas de aplicación.
+2. Entra en **myaccount.google.com/apppasswords**, escribe un nombre (p. ej. «Kings Legend») y pulsa
+   *Crear*. Google enseña una contraseña de 16 letras una sola vez: cópiala.
+3. En el Worker (*Variables and Secrets*) añade `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=465`,
+   `SMTP_USER=` la dirección de Gmail, `MAIL_FROM=Kings Legend <esa-misma-dirección>` y, como **Secret**,
+   `SMTP_PASSWORD=` las 16 letras (sin espacios).
+4. Vuelve a desplegar. `/admin/ajustes` mostrará «Configurado (SMTP)». Pruébalo en `/recuperar` con tu
+   propio correo (si no llega, mira también en *Spam*).
+
+Gmail permite unos 500 correos al día, de sobra para una liga. `MAIL_FROM` tiene que ser la misma dirección
+de Gmail: Google no deja enviar en nombre de otra. Si un correo falla, en *Observability → Logs* verás
+«[correo] no se ha podido enviar…» con el motivo (sin el destinatario ni el enlace).
+
+### Opción B: Resend (con dominio propio)
 
 1. Crea una cuenta en resend.com y verifica tu dominio (te da registros DNS para añadir en Cloudflare).
 2. Crea una API key y guárdala como secreto `RESEND_API_KEY`; define `MAIL_FROM` con una dirección de ese
    dominio.
 3. Vuelve a desplegar. `/admin/ajustes` mostrará «Configurado (Resend)».
 
-El plan gratuito de Resend permite 100 correos al día y 3.000 al mes.
+El plan gratuito de Resend permite 100 correos al día y 3.000 al mes. Sin dominio verificado, Resend solo
+envía a tu propia dirección, así que no sirve para los jugadores. Si están definidas las dos opciones, se usa
+Resend.
+
+## 6 bis. Entrar con Google
+
+Con esto aparece el botón **«Continuar con Google»** en el acceso y en el registro. Quien entra por primera
+vez con Google tiene la cuenta creada al momento (Google ya ha comprobado su correo) y va a completar su
+perfil. Si ya tenía cuenta con ese mismo correo, se enlaza con ella. Quien solo usa Google puede crearse
+además una contraseña desde «¿Has olvidado la contraseña?» (hace falta el correo del paso 6).
+
+1. Entra en **console.cloud.google.com** con tu cuenta de Google y crea un proyecto (p. ej. «Kings Legend»).
+2. *APIs y servicios* → **Pantalla de consentimiento de OAuth** (o *Google Auth Platform* → *Branding*):
+   tipo **Externo**, nombre de la aplicación «Kings Legend», tu correo de asistencia y, en *Dominios
+   autorizados*, el de la web (p. ej. `workers.dev` o tu dominio). Permisos: `openid`, `email` y `profile`
+   (los básicos; no hace falta verificación de Google).
+3. **Publica la aplicación** (*Audiencia* → *Publicar aplicación*, estado «En producción»). Mientras está
+   «En prueba», solo pueden entrar los correos que añadas como usuarios de prueba.
+4. *Credenciales* (o *Clientes*) → **Crear cliente OAuth** → tipo **Aplicación web**:
+   - *Orígenes de JavaScript autorizados*: la dirección de la web, p. ej.
+     `https://claudekingslegend.TU-SUBDOMINIO.workers.dev`
+   - *URIs de redireccionamiento autorizados*: esa misma dirección seguida de `/api/auth/callback/google`, p. ej.
+     `https://claudekingslegend.TU-SUBDOMINIO.workers.dev/api/auth/callback/google`
+5. Copia el **ID de cliente** a `GOOGLE_CLIENT_ID` (Text) y el **secreto de cliente** a
+   `GOOGLE_CLIENT_SECRET` (**Secret**) en *Variables and Secrets* del Worker, y vuelve a desplegar.
+   `/admin/ajustes` mostrará «Entrar con Google: Configurado».
+
+Si cambias a un dominio propio, añade el nuevo origen y la nueva URI de redirección en el mismo cliente de
+Google (puedes dejar las dos).
 
 ## 7. Montar la liga
 
@@ -193,9 +249,13 @@ BETTER_AUTH_URL=http://localhost:8787
 | El inicio de sesión falla sin mensaje claro | `NEXT_PUBLIC_SITE_URL` no coincide con la dirección del navegador (con o sin `www`, `http` frente a `https`). Corrígela y vuelve a desplegar. |
 | Tras una semana sin visitas, la web da error de base de datos | El plan gratuito de Supabase **pausa** el proyecto tras 7 días sin actividad. Reactívalo en el panel de Supabase; con la liga en marcha no debería pasar. |
 | «Demasiados intentos. Espera unos minutos.» | Límite de intentos de acceso (10 cada 5 minutos por IP). Es intencionado. |
+| Google dice **«Error 400: redirect_uri_mismatch»** | La URI de redirección del cliente de Google no coincide letra a letra con `NEXT_PUBLIC_SITE_URL` + `/api/auth/callback/google` (paso 6 bis). |
+| Google dice **«Acceso bloqueado: la aplicación no ha completado el proceso de verificación»** | La pantalla de consentimiento sigue «En prueba». Publícala (paso 6 bis, punto 3) o añade ese correo como usuario de prueba. |
+| No llega el correo de recuperación | Mira *Spam*. En *Observability → Logs* busca «[correo]». Con Gmail, `535 … Username and Password not accepted` es que `SMTP_PASSWORD` no es una contraseña de aplicación o tiene espacios. |
 
 ## 12. Qué no está probado todavía
 
 Todo esto se ha comprobado en local con `workerd` y un PostgreSQL real (ver `docs/AUDITORIA.md`), pero aún
-no en tu cuenta de Cloudflare: la conexión real Hyperdrive ↔ Supabase, el envío con Resend y la caché de
-imágenes con dominio propio. Lo primero que hay que mirar tras el primer despliegue es `/api/health`.
+no en tu cuenta de Cloudflare: el envío con Resend, el envío real a Gmail (el envío SMTP desde `workerd` sí se
+ha probado, contra un servidor SMTP local), el inicio de sesión con un cliente real de Google (se ha probado
+hasta la redirección a Google y la vuelta con error) y la caché de imágenes con dominio propio. Lo primero que hay que mirar tras el primer despliegue es `/api/health`.

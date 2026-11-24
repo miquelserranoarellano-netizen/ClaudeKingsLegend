@@ -1,4 +1,5 @@
 import { desc, eq } from "drizzle-orm";
+import Link from "next/link";
 import { DashboardTitle } from "@/components/layout/dashboard-title";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { ConfirmForm } from "@/components/ui/confirm-form";
@@ -8,7 +9,7 @@ import { deleteAccountAction } from "@/features/profiles/actions";
 import { formatDateTime } from "@/lib/format";
 import { requireUser } from "@/server/auth/session";
 import { getDb } from "@/server/db/client";
-import { sessions } from "@/server/db/schema";
+import { accounts, sessions } from "@/server/db/schema";
 import { isMailConfigured } from "@/server/mail";
 
 export const metadata = { title: "Ajustes de cuenta" };
@@ -24,11 +25,17 @@ function deviceLabel(userAgent: string | null): string {
 export default async function AccountSettingsPage() {
   const user = await requireUser("/dashboard/ajustes");
   const db = await getDb();
-  const active = await db
-    .select({ id: sessions.id, userAgent: sessions.userAgent, updatedAt: sessions.updatedAt, expiresAt: sessions.expiresAt })
-    .from(sessions)
-    .where(eq(sessions.userId, user.id))
-    .orderBy(desc(sessions.updatedAt));
+  const [active, linked] = await Promise.all([
+    db
+      .select({ id: sessions.id, userAgent: sessions.userAgent, updatedAt: sessions.updatedAt, expiresAt: sessions.expiresAt })
+      .from(sessions)
+      .where(eq(sessions.userId, user.id))
+      .orderBy(desc(sessions.updatedAt)),
+    db.select({ providerId: accounts.providerId }).from(accounts).where(eq(accounts.userId, user.id)),
+  ]);
+  // Quien se registró con Google no tiene contraseña (hasta que la cree con el enlace de recuperación).
+  const hasPassword = linked.some((a) => a.providerId === "credential");
+  const hasGoogle = linked.some((a) => a.providerId === "google");
 
   return (
     <>
@@ -41,13 +48,24 @@ export default async function AccountSettingsPage() {
             <p className="text-ink-3">
               {user.emailVerified ? "Confirmado." : isMailConfigured() ? "Sin confirmar." : "Sin confirmar (este servidor no envía correos todavía)."} Para cambiarlo, escríbenos desde Contacto.
             </p>
+            {hasGoogle && <p className="text-ink-3">Cuenta de Google conectada: puedes entrar con el botón «Continuar con Google».</p>}
           </CardBody>
         </Card>
 
         <Card>
           <CardHeader title="Contraseña" />
           <CardBody className="py-5">
-            <ChangePasswordForm />
+            {hasPassword ? (
+              <ChangePasswordForm />
+            ) : (
+              <p className="text-sm text-ink-2">
+                Entras con Google y no tienes contraseña. Si quieres poder entrar también con tu correo, pide un enlace en{" "}
+                <Link href="/recuperar" className="font-semibold text-brand underline-offset-4 hover:underline">
+                  «He olvidado mi contraseña»
+                </Link>{" "}
+                con {user.email} y elige una.
+              </p>
+            )}
           </CardBody>
         </Card>
 

@@ -2,7 +2,9 @@ import { DashboardTitle } from "@/components/layout/dashboard-title";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { SettingsForm } from "@/features/admin/components/admin-forms";
 import { getSettings } from "@/features/settings/service";
+import { isGoogleConfigured } from "@/server/auth/google";
 import { requirePlatformAdmin } from "@/server/auth/session";
+import { isCloudflareWorker } from "@/server/db/client";
 import { mailProvider } from "@/server/mail";
 
 export const metadata = { title: "Ajustes" };
@@ -12,6 +14,7 @@ export default async function SettingsPage() {
   const settings = await getSettings();
   const provider = mailProvider();
   const mail = provider !== null;
+  const google = isGoogleConfigured();
   return (
     <>
       <DashboardTitle title="Ajustes de la plataforma" />
@@ -34,8 +37,16 @@ export default async function SettingsPage() {
                 </dd>
               </div>
               <div className="flex justify-between gap-2">
+                <dt className="text-ink-3">Entrar con Google</dt>
+                <dd className={google ? "font-semibold text-open" : "font-semibold text-warning"}>
+                  {google ? "Configurado" : "Sin configurar: no aparece el botón «Continuar con Google»"}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-2">
                 <dt className="text-ink-3">Base de datos</dt>
-                <dd className="font-semibold">{process.env.DATABASE_URL ? "PostgreSQL" : "PGlite local (solo desarrollo)"}</dd>
+                <dd className="font-semibold">
+                  {isCloudflareWorker() ? "PostgreSQL (Hyperdrive)" : process.env.DATABASE_URL ? "PostgreSQL" : "PGlite local (solo desarrollo)"}
+                </dd>
               </div>
               <div className="flex justify-between gap-2">
                 <dt className="text-ink-3">URL pública</dt>

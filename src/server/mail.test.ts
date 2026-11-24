@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { isMailConfigured, mailProvider, sendMail } from "./mail";
+import { isMailConfigured, mailProvider, parseFrom, sendMail } from "./mail";
 
 const MAIL_VARS = ["MAIL_FROM", "RESEND_API_KEY", "SMTP_HOST"] as const;
 const saved = Object.fromEntries(MAIL_VARS.map((name) => [name, process.env[name]]));
@@ -47,6 +47,23 @@ describe("correo", () => {
     });
 
     fetchMock.mockResolvedValueOnce(new Response("{}", { status: 422 }));
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
     await expect(sendMail({ to: "jugador@example.test", subject: "Hola", text: "Enlace" })).rejects.toThrow("Resend respondió 422");
+    // El fallo queda registrado (Better Auth se traga los errores de sus correos), sin el destinatario.
+    expect(logged).toHaveBeenCalledTimes(1);
+    expect(JSON.stringify(logged.mock.calls[0])).not.toContain("jugador@example.test");
+    logged.mockRestore();
+  });
+});
+
+describe("remitente de los correos (MAIL_FROM)", () => {
+  it("separa el nombre y la dirección", () => {
+    expect(parseFrom("Kings Legend <liga.kings@gmail.com>")).toEqual({ name: "Kings Legend", email: "liga.kings@gmail.com" });
+    expect(parseFrom('"Kings Legend" <liga@ejemplo.es>')).toEqual({ name: "Kings Legend", email: "liga@ejemplo.es" });
+  });
+
+  it("acepta solo la dirección", () => {
+    expect(parseFrom("liga.kings@gmail.com")).toEqual({ email: "liga.kings@gmail.com" });
+    expect(parseFrom("<liga.kings@gmail.com>")).toEqual({ email: "liga.kings@gmail.com" });
   });
 });

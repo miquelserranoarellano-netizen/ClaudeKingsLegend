@@ -14,6 +14,7 @@ creada) y con imagen nueva «gamer». Auditoría completa en `docs/AUDITORIA.md`
 | Detalle de torneo (información, participantes, calendario, cuadro o clasificación, reglas, premios, campeón, anuncios, inscripción según rol y fase) | Hecho |
 | Página de partido (marcador, plantillas, MVP, historial de resultados, evidencias privadas, disputas; formularios según rol) | Hecho |
 | Cuentas (registro, acceso, cierre, recuperación, verificación de correo, cambio de contraseña, sesiones, eliminación anonimizada) | Hecho (correo: ver «Sin probar») |
+| Entrar con Google (OAuth; enlaza con la cuenta del mismo correo; quien solo usa Google puede crearse contraseña por correo) | Hecho (sin probar con un cliente real de Google) |
 | Perfil público del jugador (Riot ID declarado, avatar, bio, equipos, historial, estadísticas) | Hecho |
 | Equipos (crear, editar, logotipo, invitar, aceptar/rechazar, expulsar, salir, capitanía, disolver, historial) | Hecho |
 | Panel `/dashboard` (resumen, torneos, partidos, equipos, invitaciones, notificaciones, perfil, ajustes) | Hecho |
@@ -25,7 +26,7 @@ creada) y con imagen nueva «gamer». Auditoría completa en `docs/AUDITORIA.md`
 | Seguridad (permisos en servidor, CSRF, límites, CSP, cabeceras, auditoría, concurrencia optimista) | Hecho |
 | Despliegue en **Cloudflare Workers** (OpenNext, `wrangler.jsonc`, Hyperdrive, conexión por petición, caché de imágenes en el borde) | Hecho; probado en local con `workerd` (ver «Sin probar») |
 | Base de datos en **Supabase** (migraciones aplicadas y registradas, RLS en todas las tablas, API REST cerrada, índices) | Hecho y verificado |
-| Correo por **Resend** (API HTTP, para Cloudflare) o SMTP (para Node) | Hecho (Resend sin probar con una clave real) |
+| Correo por **Resend** (API HTTP) o **SMTP** (Gmail u otro; en Cloudflare con `worker-mailer`, en Node con `nodemailer`) | Hecho (SMTP desde `workerd` probado contra un servidor local; Resend y Gmail sin probar con credenciales reales) |
 | Despliegue alternativo (Dockerfile, docker-compose con PostgreSQL y Caddy, guía Hostinger) | Escrito; ver «Sin probar» |
 
 ## Cómo se ha verificado
@@ -75,8 +76,11 @@ creada) y con imagen nueva «gamer». Auditoría completa en `docs/AUDITORIA.md`
 - **PostgreSQL 17**: el camino de producción se ha probado contra un PostgreSQL 16 real (en Node y en
   `workerd`). La base de Supabase es PostgreSQL 17 y tiene el esquema aplicado, pero la aplicación aún no se
   ha conectado a ella.
-- **Correo real**: sin SMTP configurado. En desarrollo los enlaces de verificación y recuperación se escriben
-  en la consola del servidor; el envío por SMTP está escrito pero no se ha ejecutado.
+- **Correo real**: aún sin credenciales en producción. El envío SMTP desde `workerd` se ha probado de punta a
+  punta contra un servidor SMTP local (pedir el enlace, recibirlo, cambiar la contraseña, entrar con ella y
+  ver que el enlace no se puede reutilizar). En desarrollo, sin correo, los enlaces se escriben en la consola.
+- **Entrar con Google**: probado hasta la redirección a Google (con `redirect_uri` y `prompt=select_account`)
+  y la vuelta con error o cancelación; falta probarlo con un cliente OAuth real.
 - **Accesibilidad**: etiquetas, foco visible, navegación por teclado, «saltar al contenido», regiones y
   diálogos nativos están cuidados, pero no se ha pasado una auditoría automática (axe) ni un lector de
   pantalla real.
@@ -139,4 +143,5 @@ Paso a paso en `docs/DESPLIEGUE-CLOUDFLARE.md`:
    `BETTER_AUTH_SECRET`.
 4. Fusionar la rama `claude/great-cannon-uadmuu` en la rama que despliega Cloudflare.
 5. Registrarte y hacerte administrador (SQL en la guía).
-6. Recomendado: Resend para el correo, dominio propio y **revisión legal** de privacidad y términos.
+6. Recomendado: correo (Gmail con contraseña de aplicación, o Resend con dominio propio), entrar con Google
+   (cliente OAuth) y **revisión legal** de privacidad y términos. Pasos en `docs/DESPLIEGUE-CLOUDFLARE.md`.

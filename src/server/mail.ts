@@ -1,12 +1,14 @@
 import "server-only";
+import { isCloudflareWorker } from "./db/client";
 
 /**
  * Envío de correo, solo si está configurado. Dos formas (siempre con `MAIL_FROM`):
  *
  * - **Resend** (`RESEND_API_KEY`): una API HTTP. Es la recomendada en Cloudflare Workers, donde las
  *   conexiones SMTP no son fiables. Plan gratuito suficiente para una liga.
- * - **SMTP** (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`): el correo de Hostinger o cualquier
- *   otro proveedor. Para servidores Node (Docker, VPS).
+ * - **SMTP** (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`): una cuenta de Gmail con contraseña
+ *   de aplicación (gratis y sin dominio propio), el correo de Hostinger o cualquier otro proveedor. En
+ *   Cloudflare Workers se envía con `worker-mailer` (sockets TCP del Worker); en Node, con `nodemailer`.
  *
  * Sin configuración no se finge nada: en desarrollo el mensaje (con su enlace) se escribe en la consola del
  * servidor para poder probar los flujos; en producción no se envía, no se registra su contenido y las
@@ -60,13 +62,20 @@ export async function sendMail(message: MailMessage): Promise<MailOutcome> {
     console.warn("[correo] no hay SMTP configurado; no se ha enviado un correo:", message.subject);
     return "skipped";
   }
-  if (mailProvider() === "resend") {
-    await sendWithResend(message);
+  try {
+    if (mailProvider() === "resend") await sendWithResend(message);
+    else if (isCloudflareWorker()) await sendWithWorkerSmtp(message);
+    else {
+      const transport = await getTransporter();
+      await transport.sendMail({ from: process.env.MAIL_FROM, to: message.to, subject: message.subject, text: message.text });
+    }
     return "sent";
+  } catch (error) {
+    // Better Auth se traga los errores de sus correos: sin esta línea, un SMTP mal configurado no deja rastro.
+    // Solo el asunto y el motivo; ni el destinatario ni el enlace.
+    console.error(`[correo] no se ha podido enviar «${message.subject}»:`, error instanceof Error ? error.message : error);
+    throw error;
   }
-  const transport = await getTransporter();
-  await transport.sendMail({ from: process.env.MAIL_FROM, to: message.to, subject: message.subject, text: message.text });
-  return "sent";
 }
 
 /** API de Resend (https://resend.com/docs/api-reference/emails/send-email). */
@@ -80,4 +89,32 @@ async function sendWithResend(message: MailMessage): Promise<void> {
     // Sin el cuerpo de la respuesta ni el destinatario en el registro: solo el código.
     throw new Error(`Resend respondió ${response.status}`);
   }
+}
+
+/** «Kings Legend <liga@gmail.com>» → nombre y dirección (o solo la dirección). */
+export function parseFrom(from: string): { name?: string; email: string } {
+  const match = /^\s*"?([^"<]*?)"?\s*<([^>]+)>\s*$/.exec(from);
+  if (match) return match[1] ? { name: match[1].trim(), email: match[2]!.trim() } : { email: match[2]!.trim() };
+  return { email: from.trim() };
+}
+
+/**
+ * SMTP desde un Worker. Puerto 465: TLS desde el principio; 587: STARTTLS. El paquete solo funciona en el
+ * runtime de Workers (`cloudflare:sockets`), así que se importa aquí, cuando hace falta. Se pide su versión ESM:
+ * la CommonJS (la que elegiría el empaquetador) hace `require("cloudflare:sockets")`, que el Worker no admite.
+ */
+async function sendWithWorkerSmtp(message: MailMessage): Promise<void> {
+  const { WorkerMailer } = await import("worker-mailer/dist/index.mjs");
+  const port = Number(process.env.SMTP_PORT) || 465;
+  await WorkerMailer.send(
+    {
+      host: process.env.SMTP_HOST!,
+      port,
+      secure: port === 465,
+      startTls: port !== 465,
+      credentials: process.env.SMTP_USER ? { username: process.env.SMTP_USER, password: process.env.SMTP_PASSWORD ?? "" } : undefined,
+      authType: ["plain", "login"],
+    },
+    { from: parseFrom(process.env.MAIL_FROM!), to: message.to, subject: message.subject, text: message.text },
+  );
 }
