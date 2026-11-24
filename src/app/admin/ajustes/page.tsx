@@ -2,16 +2,17 @@ import { DashboardTitle } from "@/components/layout/dashboard-title";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { SettingsForm } from "@/features/admin/components/admin-forms";
 import { getSettings } from "@/features/settings/service";
+import { formatDateTime } from "@/lib/format";
 import { isGoogleConfigured } from "@/server/auth/google";
 import { requirePlatformAdmin } from "@/server/auth/session";
 import { isCloudflareWorker } from "@/server/db/client";
-import { mailProvider } from "@/server/mail";
+import { lastMailFailure, mailProvider } from "@/server/mail";
 
 export const metadata = { title: "Ajustes" };
 
 export default async function SettingsPage() {
   await requirePlatformAdmin("/admin/ajustes");
-  const settings = await getSettings();
+  const [settings, mailFailure] = await Promise.all([getSettings(), lastMailFailure()]);
   const provider = mailProvider();
   const mail = provider !== null;
   const google = isGoogleConfigured();
@@ -36,6 +37,18 @@ export default async function SettingsPage() {
                     : "Sin configurar: no se envían correos (verificación, recuperación ni avisos)"}
                 </dd>
               </div>
+              {mailFailure && (
+                <div className="rounded-sm border border-danger/40 bg-danger-soft px-3 py-2">
+                  <dt className="font-semibold text-danger">Último correo que no se pudo enviar · {formatDateTime(mailFailure.at)}</dt>
+                  <dd className="mt-1 text-ink-2">
+                    «{mailFailure.subject}»: <code className="break-all text-xs">{mailFailure.reason}</code>
+                  </dd>
+                  <dd className="mt-1 text-xs text-ink-3">
+                    Con Gmail, «535» o «Username and Password not accepted» quiere decir que la contraseña de aplicación
+                    (SMTP_PASSWORD) o la cuenta (SMTP_USER) no son correctas. Más casos en docs/DESPLIEGUE-CLOUDFLARE.md.
+                  </dd>
+                </div>
+              )}
               <div className="flex justify-between gap-2">
                 <dt className="text-ink-3">Entrar con Google</dt>
                 <dd className={google ? "font-semibold text-open" : "font-semibold text-warning"}>

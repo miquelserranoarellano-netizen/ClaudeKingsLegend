@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { audit } from "./audit";
 import { isMailConfigured, mailProvider, parseFrom, sendMail } from "./mail";
+
+// El fallo se guarda en la auditoría: aquí no hay base de datos, solo se comprueba qué se guardaría.
+vi.mock("./audit", () => ({ audit: vi.fn(async () => {}) }));
+vi.mock("./db/client", async (importOriginal) => ({ ...(await importOriginal<typeof import("./db/client")>()), getDb: vi.fn(async () => ({})) }));
 
 const MAIL_VARS = ["MAIL_FROM", "RESEND_API_KEY", "SMTP_HOST"] as const;
 const saved = Object.fromEntries(MAIL_VARS.map((name) => [name, process.env[name]]));
@@ -52,6 +57,8 @@ describe("correo", () => {
     // El fallo queda registrado (Better Auth se traga los errores de sus correos), sin el destinatario.
     expect(logged).toHaveBeenCalledTimes(1);
     expect(JSON.stringify(logged.mock.calls[0])).not.toContain("jugador@example.test");
+    expect(audit).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ action: "mail.failed", entityType: "mail", data: { subject: "Hola", reason: "Resend respondió 422" } }));
+    expect(JSON.stringify(vi.mocked(audit).mock.calls)).not.toContain("jugador@example.test");
     logged.mockRestore();
   });
 });
@@ -60,6 +67,10 @@ describe("remitente de los correos (MAIL_FROM)", () => {
   it("separa el nombre y la dirección", () => {
     expect(parseFrom("Kings Legend <liga.kings@gmail.com>")).toEqual({ name: "Kings Legend", email: "liga.kings@gmail.com" });
     expect(parseFrom('"Kings Legend" <liga@ejemplo.es>')).toEqual({ name: "Kings Legend", email: "liga@ejemplo.es" });
+  });
+
+  it("entiende el remitente aunque falten los < >", () => {
+    expect(parseFrom("Kings Legend kingslegend.liga@gmail.com")).toEqual({ name: "Kings Legend", email: "kingslegend.liga@gmail.com" });
   });
 
   it("acepta solo la dirección", () => {

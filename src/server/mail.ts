@@ -1,5 +1,8 @@
 import "server-only";
-import { isCloudflareWorker } from "./db/client";
+import { desc, eq } from "drizzle-orm";
+import { audit } from "./audit";
+import { getDb, isCloudflareWorker } from "./db/client";
+import { auditLogs } from "./db/schema";
 
 /**
  * Envío de correo, solo si está configurado. Dos formas (siempre con `MAIL_FROM`):
@@ -71,11 +74,45 @@ export async function sendMail(message: MailMessage): Promise<MailOutcome> {
     }
     return "sent";
   } catch (error) {
-    // Better Auth se traga los errores de sus correos: sin esta línea, un SMTP mal configurado no deja rastro.
+    // Better Auth se traga los errores de sus correos: sin esto, un SMTP mal configurado no deja rastro.
     // Solo el asunto y el motivo; ni el destinatario ni el enlace.
-    console.error(`[correo] no se ha podido enviar «${message.subject}»:`, error instanceof Error ? error.message : error);
+    const reason = (error instanceof Error ? error.message : String(error)).slice(0, 500);
+    console.error(`[correo] no se ha podido enviar «${message.subject}»:`, reason);
+    await recordMailFailure(message.subject, reason);
     throw error;
   }
+}
+
+/**
+ * Deja el fallo en la auditoría para que se vea en `/admin/ajustes` sin tener que buscar en los registros del
+ * servidor. Si tampoco se puede guardar, solo queda la línea de la consola.
+ */
+async function recordMailFailure(subject: string, reason: string): Promise<void> {
+  try {
+    await audit(await getDb(), {
+      actorId: null,
+      action: "mail.failed",
+      entityType: "mail",
+      entityId: mailProvider() ?? "none",
+      data: { subject, reason },
+    });
+  } catch (error) {
+    console.error("[correo] tampoco se ha podido guardar el fallo:", error instanceof Error ? error.message : error);
+  }
+}
+
+/** Último fallo de envío registrado (para el estado del servidor en la administración). */
+export async function lastMailFailure(): Promise<{ at: Date; subject: string; reason: string } | null> {
+  const db = await getDb();
+  const [row] = await db
+    .select({ createdAt: auditLogs.createdAt, data: auditLogs.data })
+    .from(auditLogs)
+    .where(eq(auditLogs.action, "mail.failed"))
+    .orderBy(desc(auditLogs.createdAt))
+    .limit(1);
+  if (!row) return null;
+  const data = (row.data ?? {}) as { subject?: string; reason?: string };
+  return { at: row.createdAt, subject: data.subject ?? "", reason: data.reason ?? "" };
 }
 
 /** API de Resend (https://resend.com/docs/api-reference/emails/send-email). */
@@ -91,10 +128,18 @@ async function sendWithResend(message: MailMessage): Promise<void> {
   }
 }
 
-/** «Kings Legend <liga@gmail.com>» → nombre y dirección (o solo la dirección). */
+/**
+ * «Kings Legend <liga@gmail.com>» → nombre y dirección (o solo la dirección). También acepta el olvido de los
+ * `< >` («Kings Legend liga@gmail.com»): la dirección es la palabra con arroba y el resto, el nombre.
+ */
 export function parseFrom(from: string): { name?: string; email: string } {
   const match = /^\s*"?([^"<]*?)"?\s*<([^>]+)>\s*$/.exec(from);
   if (match) return match[1] ? { name: match[1].trim(), email: match[2]!.trim() } : { email: match[2]!.trim() };
+  const loose = /^(.*?)\s*([^\s<>"]+@[^\s<>"]+)\s*$/.exec(from.trim());
+  if (loose) {
+    const name = loose[1]!.replace(/^"|"$/g, "").trim();
+    return name ? { name, email: loose[2]! } : { email: loose[2]! };
+  }
   return { email: from.trim() };
 }
 

@@ -10,7 +10,7 @@ import { auditLogs, profiles, tournaments } from "@/server/db/schema";
 
 export const metadata = { title: "Auditoría" };
 
-const ENTITIES = ["user", "profile", "team", "team_member", "team_invitation", "tournament", "registration", "match", "match_result", "dispute", "announcement", "content_page", "setting"];
+const ENTITIES = ["user", "profile", "team", "team_member", "team_invitation", "tournament", "registration", "match", "match_result", "dispute", "announcement", "content_page", "setting", "mail"];
 
 export default async function AuditPage({ searchParams }: { searchParams: Promise<{ entidad?: string; accion?: string; pagina?: string }> }) {
   await requirePlatformAdmin("/admin/auditoria");

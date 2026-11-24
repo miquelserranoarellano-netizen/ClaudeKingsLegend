@@ -17,7 +17,8 @@ export type AuditEntity =
   | "dispute"
   | "announcement"
   | "content_page"
-  | "setting";
+  | "setting"
+  | "mail";
 
 /**
  * Añade una entrada al registro de auditoría dentro de la misma transacción que el cambio: si el cambio
